@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record model="ir.ui.view" id="delivery.container_mgmt_inherit_delivery_hs_code">
+        <field name="name">product.template.hs_code.inherit.container.mgmt</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="delivery.product_template_hs_code"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='hs_code']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
