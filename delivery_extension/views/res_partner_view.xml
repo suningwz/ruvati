@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="view_res_partner_form_inherit" model="ir.ui.view">
+            <field name="name">view.res.partner.form.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='property_payment_term_id']" position="after">
+                    <field name="customer_rank" invisible="1"/>
+                    <field name="is_ship_collect"/>
+<!--                    attrs="{'invisible': [('customer_rank', '!=', 1)]}"-->
+                    <field name="carrier_id" attrs="{'invisible': [('is_ship_collect', '=', False)], 'required': [('is_ship_collect', '=', True)]}"/>
+                    <field name="shipper_number" attrs="{'invisible': [('is_ship_collect', '=', False)], 'required': [('is_ship_collect', '=', True)]}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

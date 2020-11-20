@@ -1,0 +1,19 @@
+# -*- encoding: utf-8 -*-
+
+from odoo import api, fields, models, _
+
+
+class ResPartner(models.Model):
+    _inherit = "res.partner"
+    
+    is_ship_collect = fields.Boolean(string="Ship Collect")
+    carrier_id = fields.Many2one("delivery.carrier", string="Carrier")
+    shipper_number = fields.Char(string="Shipper No.")
+
+    @api.onchange('is_ship_collect')
+    def onchange_is_ship_collect(self):
+        if not self.is_ship_collect:
+            self.shipper_number = False
+            self.carrier_id = False
+
+ResPartner()

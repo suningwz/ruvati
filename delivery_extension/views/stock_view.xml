@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="view_picking_withcarrier_out_form_inherit">
+            <field name="name">view.picking.withcarrier.out.form.inherit</field>
+            <field name="type">form</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="delivery.view_picking_withcarrier_out_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='carrier_id']" position="after">
+                    <field name="shipper_number" attrs="{'invisible': [('is_ship_collect', '=', False)]}"/>
+                    <field name="is_create_label" invisible="1"/>
+                    <field name="is_ship_collect" invisible="1"/>
+                </xpath>
+                <xpath expr="//button[@name='print_return_label']" position="after">
+                    <button name="action_create_label" string="Create Label" type="object" attrs="{'invisible': [('is_create_label', '!=', True)]}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
