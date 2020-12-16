@@ -65,7 +65,6 @@ class MasterHouseBillLading(models.Model):
     def create(self, vals):
         
         res = super(MasterHouseBillLading, self).create(vals)
-#        print (hi)
         return res
 
 #    @api.multi
@@ -131,9 +130,10 @@ class MasterHouseBillLading(models.Model):
 #    @api.multi
     def action_ready(self):
         self.ensure_one()
-#        self.hbl_ids.action_ready()
-        
         purchase_lines = self.hbl_line_ids.mapped('purchase_line')
+        qty_to_load = self.hbl_line_ids.mapped('qty_to_load')
+        if qty_to_load and not all(qty_to_load):
+            raise ValidationError("Qty to Load cannot be empty, it should be a non zero valid number.")
         for line in purchase_lines:
             qty_to_transfer = line.qty_received + sum(self.hbl_line_ids.filtered(lambda p_line : p_line.purchase_line.id == line.id).mapped('qty_to_load'))
             if line.product_qty < qty_to_transfer :
@@ -236,7 +236,6 @@ class MasterHouseBillLading(models.Model):
     def compute_container_count(self):
         for rec in self:
             rec.container_count = len(rec.container_ids)
-        print ('cont counttttttt', self.container_count)
 
 #    @api.multi
     def action_view_containers(self):
@@ -246,11 +245,9 @@ class MasterHouseBillLading(models.Model):
         self.ensure_one()
         action = self.env.ref('container_management.action_view_container')
         result = action.read()[0]
-        print ('resulttttttt11111111', result)
         container_ids =  self.hbl_line_ids.mapped('container_id').ids
         if len(container_ids) > 0:
             result['domain'] = "[('id', 'in', " + str(container_ids) + ")]"
-        print ('resulttttttt2222222', result)
         return result
 
 #    @api.multi
@@ -307,7 +304,6 @@ class MasterHouseBillLading(models.Model):
         for rec in self:
             self.hbl_line_ids.write({'state' : 'customs cleared'})
             self.write({'state' : 'customs cleared'})
-            print ('reccccccccccccc', rec)
             container_ids = self.hbl_line_ids.container_id
             container_ids.create_container_status_note(msg="Customs cleared for BOL %s" % (rec.name), user_id=self.env.user)
             if self.state in ['customs cleared','received partial','received warehouse']:
@@ -553,9 +549,7 @@ class HouseBillLading(models.Model):
 
     @api.model
     def create(self,vals):
-        print (hi)
         hbl_id = super(HouseBillLading, self).create(vals)
-        
         mhbl_id = vals.get('mhbl_id', False)
         if mhbl_id:
             mhbl_id = self.env['master.house.bill.lading'].browse(mhbl_id)
@@ -572,7 +566,6 @@ class HouseBillLading(models.Model):
         """
         for rec in self:
             self.hbl_line_ids.write({'state' : 'customs cleared'})
-            print ('reccccccccccccc', rec)
             container_ids = rec.mapped('hbl_line_ids.container_id')
             container_ids.create_container_status_note(msg="Customs cleared for HBL %s" % (rec.name), user_id=self.env.user)
             if all(state in ['customs cleared','received partial','received warehouse'] for state in rec.mhbl_id.mapped('hbl_ids').mapped('state')):
@@ -1015,7 +1008,6 @@ class HouseBillLading(models.Model):
     @api.depends('hbl_line_ids.state', 'hbl_line_ids.hbl_id')
 #    @api.one
     def compute_state(self):
-        print ('sassssasasaaasss')
         state_list = [hbl_line.state for hbl_line in self.hbl_line_ids]
         if not self.hbl_line_ids or all(map(lambda rec:rec == 'draft',state_list)):
             self.state = 'draft'
@@ -1149,7 +1141,6 @@ class HouseBillLading(models.Model):
 
 #    @api.multi
     def unlink(self):
-        print ('unlinkkkkkkkkk')
         for hbl in self:
             hbl.hbl_line_ids.unlink()
         return super(HouseBillLading, self).unlink()

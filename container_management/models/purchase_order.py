@@ -89,12 +89,10 @@ class PurchaseOrderLine(models.Model):
     @api.depends('order_id')
     def _compute_qty_received_warehouse(self):
         for line in self:
-            print ('qtyyyy', line)
             domain = [('origin', '=', line.order_id.name), ('product_id', '=', line.product_id.id)]
             location_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
 #            ('warehouse_type', '=', 'ocean'), 
-            int_moves = self.env['stock.move'].search([('picking_type_id.code','=','internal'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '!=', location_id.id)]).filtered(lambda r : r.location_dest_id.location_id != location_id)
-
+            int_moves = self.env['stock.move'].search([('picking_type_id.code','=','internal'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id)]).filtered(lambda r : r.location_dest_id.location_id != location_id)
 #            for picking in line.order_id.picking_ids:
 #                qty_received_warehouse = 0
 #                moves = picking.move_lines.search(domain).filtered(
@@ -104,7 +102,6 @@ class PurchaseOrderLine(models.Model):
             for move in int_moves:
                 qty_received_warehouse += move.product_uom_qty
             line.qty_received_warehouse = qty_received_warehouse
-            print ('wareeeeee', line.qty_received_warehouse)
             
     @api.depends('order_id', 'qty_received_warehouse', 'qty_received', 'product_qty')
     def _compute_qty_to_ship(self):

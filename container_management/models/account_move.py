@@ -25,14 +25,14 @@ class AccountMove(models.Model):
 #        the corresponding column canot hide with
 #        invisible attrs.
 #        """
-#        res = super(AccountInvoice, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
+#        res = super(AccountMove, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
 
 #        if view_type == 'form':
 #            doc = etree.XML(res['fields']['invoice_line_ids']['views']['tree']['arch'])
 #            product_node = doc.xpath("//field[@name='product_id']")[0]
-#            tax_line_node = doc.xpath("//field[@name='invoice_line_tax_ids']")[0]
-#            uom_node = doc.xpath("//field[@name='uom_id']")[0]
-#            analytical_node = doc.xpath("//field[@name='account_analytic_id']")[0]
+#            tax_line_node = doc.xpath("//field[@name='tax_ids']")[0]
+#            uom_node = doc.xpath("//field[@name='product_uom_id']")[0]
+#            analytical_node = doc.xpath("//field[@name='analytic_account_id']")[0]
 #            anal_tag_node = doc.xpath("//field[@name='analytic_tag_ids']")[0]
 #            node_list = [product_node, tax_line_node, uom_node, analytical_node, anal_tag_node]
 #            is_vendor_bill = self._context.get('cont_bills', False)
@@ -41,9 +41,6 @@ class AccountMove(models.Model):
 #                    doc.remove(node)
 #                res['fields']['invoice_line_ids']['views']['tree']['arch'] = etree.tostring(doc)
 #                doc = etree.XML(res['arch'])
-#                tax_node = doc.xpath("//field[@name='tax_line_ids']")[0]
-#                tax_node.set('invisible', '1')
-#                setup_modifiers(tax_node, res['fields']['tax_line_ids'])
 #                res['arch'] = etree.tostring(doc)
 #        return res
 

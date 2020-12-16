@@ -69,20 +69,6 @@ class StockPicking(models.Model):
     def write(self,vals):
         res = super(StockPicking, self).write(vals)
         self._update_status()
-#        oc_loc_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
-#        print ('selfffffffffff', self, type(self))
-#        for rec in self:
-#            print ('rfffffffffffff', vals)
-#            if rec.state=='done':
-#                print ('sssssssssssss')
-#                if rec.picking_type_code == 'internal' \
-#                 and rec.container_id and rec.warehouse_code == 'OC':
-#                    container_lines = rec.move_lines.mapped('container_line_id').filtered(lambda rec:rec.state=='customs cleared')
-#                    if container_lines:
-#                        warehouse = rec.location_dest_id.display_name
-#                        container_lines.with_context(post_track_msg=True, warehouse=warehouse).action_received_in_warehouse()
-##                        rec.po_id.picking_ids._update_status()
-#                print ('ttttttttttttttt', vals)
         return res
 
 #    @api.multi

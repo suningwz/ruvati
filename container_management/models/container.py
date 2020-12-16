@@ -81,29 +81,29 @@ class Container(models.Model):
                 rec.mhbl_id = mhbl_id
 
     @api.depends('container_lines.state', 'container_lines.container_id')
-#    @api.one
     def _compute_state(self):
-        state_list = [hbl_line.state for hbl_line in self.container_lines]
-        if not self.container_lines or all(state == 'draft' for state in state_list):
-            self.state = 'draft'
-        elif all(state == 'ready' for state in state_list):
-            self.state = 'ready'
-        elif all(state == 'in ocean' for state in state_list):
-            self.state = 'in ocean'
-        elif all(state == 'received port' for state in state_list):
-            self.state = 'received port'
-        elif all(state == 'customs cleared' for state in state_list):
-            self.state = 'customs cleared'
-        elif all(state == 'received warehouse' for state in state_list):
-            self.state ='received warehouse'
-        elif set(['received warehouse']).issubset(set(state_list)):
-            self.state = 'received partial'
-        elif set(['received port','customs cleared']).issubset(set(state_list)):
-            self.state = 'partial clearence'
-        elif all(state == 'review' for state in state_list):
-            self.state = 'review'
-        else:
-            self.state = 'draft'
+        for rec in self:
+            state_list = [hbl_line.state for hbl_line in rec.container_lines]
+            if not self.container_lines or all(state == 'draft' for state in state_list):
+                rec.state = 'draft'
+            elif all(state == 'ready' for state in state_list):
+                rec.state = 'ready'
+            elif all(state == 'in ocean' for state in state_list):
+                rec.state = 'in ocean'
+            elif all(state == 'received port' for state in state_list):
+                rec.state = 'received port'
+            elif all(state == 'customs cleared' for state in state_list):
+                rec.state = 'customs cleared'
+            elif all(state == 'received warehouse' for state in state_list):
+                rec.state ='received warehouse'
+            elif set(['received warehouse']).issubset(set(state_list)):
+                rec.state = 'received partial'
+            elif set(['received port','customs cleared']).issubset(set(state_list)):
+                rec.state = 'partial clearence'
+            elif all(state == 'review' for state in state_list):
+                rec.state = 'review'
+            else:
+                rec.state = 'draft'
 
     def _set_container_line_mhbl(self):
         for container in self:
@@ -167,6 +167,12 @@ class Container(models.Model):
                                        'user_id' : user_id and user_id.id or False,
                                        'container_id' : container.id
                                        })
+
+    def unlink(self):
+        container_states = self.mapped('state')
+        if 'draft' in container_states or 'ready' in container_states or not container_states:
+            return super(Container, self).unlink()
+        raise UserError("You can Delete Container only at 'Draft' or 'Ready To Ship' state")
 
 Container()
 
