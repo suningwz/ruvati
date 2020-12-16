@@ -10,17 +10,18 @@ var ViewsWidget = require('stock_barcode.ViewsWidget');
 var HeaderWidget = require('stock_barcode.HeaderWidget');
 var LinesWidget = require('stock_barcode.LinesWidget');
 var SettingsWidget = require('stock_barcode.SettingsWidget');
+var MainMenu = require('stock_barcode.MainMenu');
 
 
 //var core = require('web.core');
 //var PickingQualityCheckClientAction = require('stock_barcode.picking_client_action');
 
 var _t = core._t;
-var Session = require('web.session'); 
+var Session = require('web.session');
 
-var QualityCheckClientAction = require('stock_barcode.ClientAction');
+var PickingQualityCheckClientAction = require('stock_barcode.ClientAction');
 
-var PickingQualityCheckClientAction = QualityCheckClientAction.include({
+var PickingQualityCheckClientAction = PickingQualityCheckClientAction.include({
 //    this._super.apply(this, arguments);
 
     /**
@@ -55,21 +56,19 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 }
             }
         } else {
-            if (this.actionParams.model === 'stock.picking') {
-                return {'discard': true,};  // returns if a non belonging product is scanned and thrown an error.
-            }
-            isNewLine = true;
-            // Create a line with the processed quantity.
-            if (params.product.tracking === 'none' ||
-                params.lot_id ||
-                params.lot_name
-                ) {
-                line = this._makeNewLine(params.product, params.barcode, params.product.qty || 1, params.package_id, params.result_package_id);
-            } else {
-                line = this._makeNewLine(params.product, params.barcode, 0, params.package_id, params.result_package_id);
-            }
-            this._getLines(this.currentState).push(line);
-            this.pages[this.currentPageIndex].lines.push(line);
+            return {'discard': true,};  // returns if a non belonging product is scanned and thrown an error.
+//            isNewLine = true;
+//            // Create a line with the processed quantity.
+//            if (params.product.tracking === 'none' ||
+//                params.lot_id ||
+//                params.lot_name
+//                ) {
+//                line = this._makeNewLine(params.product, params.barcode, params.product.qty || 1, params.package_id, params.result_package_id);
+//            } else {
+//                line = this._makeNewLine(params.product, params.barcode, 0, params.package_id, params.result_package_id);
+//            }
+//            this._getLines(this.currentState).push(line);
+//            this.pages[this.currentPageIndex].lines.push(line);
         }
         if (this.actionParams.model === 'stock.picking') {
             if (params.lot_id) {
@@ -109,21 +108,43 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 this.currentStep = 'lot';
             }
             var res = this._incrementLines({'product': product, 'barcode': barcode});
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             // throws an error if the scanned product is not upto this picking.
             if (res.discard) {
                 errorMessage = _t("You are expected to scan products belongs to this picking");
                 return Promise.reject(errorMessage);
             }
-            // auto validate the QC if all the products are quality check pass.
-            if (this.actionParams.model === 'stock.picking') {
+            
+            if (barcode.includes("pick") || barcode.includes("PICK")) {
+                self._save().then(function () {
+                    self.do_notify(_t("Success"), _t("The product is updated."));
+                    self.trigger_up('exit');
+                });
+            }
+            else if (barcode.includes("qc") || barcode.includes("QC")) {
                 self._save().then(function () {
                     self._rpc({
                         'model': self.actionParams.model,
                         'method': 'action_validate_qc',
                         'args': [[self.actionParams.pickingId]],
-                    })
+                    }).then(function () {
+                        self.do_notify(_t("Success"), _t("Quality Check Successful."));
+                        self.trigger_up('exit');
+                    });
                 });
             }
+            
+            
+            
             if (res.isNewLine) {
                 if (this.actionParams.model === 'stock.inventory') {
                     // FIXME sle: add owner_id, prod_lot_id, owner_id, product_uom_id
@@ -153,20 +174,64 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             this.scannedLines.push(res.id || res.virtualId);
             return Promise.resolve({linesActions: linesActions});
         } else {
-            // destroy current page before redirecting to another picking if it is PICK or QC.
-            if (barcode.includes("pick") || barcode.includes("qc") || barcode.includes("PICK") || barcode.includes("QC")) {
-                self.destroy();
-            }
+//            var barcode_split = barcode.split('/');
+//            var barcode = barcode.toLowerCase( )
+//            var n = str.includes("world");
+//            if (barcode_split.length > 1) {
+//            if (barcode_split[1] == 'PICK' || barcode_split[1] == 'QC') {
+//                allowScan = true;
+//            }
+            // if the scanned reference is either of PICK or QC picking, it should redirect to that picking.
+//            if (barcode.includes("pick") || barcode.includes("qc") || barcode.includes("PICK") || barcode.includes("QC")) {
+//                allowScan = true;
+//            }
+//            self.scannedLines = []
+            
             var success = function (res) {
                 return Promise.resolve({linesActions: res.linesActions});
             };
             var fail = function (specializedErrorMessage) {
-                self.currentStep = 'product';
+//                self.currentStep = 'product';
                 if (specializedErrorMessage){
                     return Promise.reject(specializedErrorMessage);
                 }
                 if (! self.scannedLines.length) {
-                    if (self.groups.group_tracking_lot) {
+                    // if the scanned reference is either of PICK or QC picking, throws a warning and redirects to new scanned picking by saving current page data and also invokes method to create batch qc process.
+//                    if (allowScan) {
+//                        errorMessage = _t('You have scanned a picking instead of a product, redirecting to new picking.');
+//                        self._save();
+                        
+//                        self.destroy(true)
+//                        self._rpc({
+//                            'model': 'stock.picking',
+//                            'method': 'action_create_batch_qc',
+//                            'args': [self.actionParams.pickingId],
+//                        })
+//                        var mainmenu = MainMenu.MainMenu;
+//                        mainmenu.init();
+//                        console.log(MainMenu)
+//                        self.destroy();
+//                        console.log('selfffffffffff')
+//                        console.log(self)
+//                        Session.rpc('/stock_barcode/scan_from_main_menu', {
+//                            barcode: barcode,
+//                        }).then(function(result) {
+//                            if (result.action) {
+//                                console.log('selffffffff')
+//                                console.log(self)
+//                                self.do_action(result.action);
+////                                console.log('selffffffff')
+////                                self.trigger_up('reload');
+////                                console.log(mainmenu)
+////                                console.log('resultttttttttttt')
+////                                console.log(result)
+////                                console.log(result.action)
+//                            } else if (result.warning) {
+//                                self.do_warn(result.warning);
+//                            }
+//                        });
+                    }
+                    else if (self.groups.group_tracking_lot) {
                         errorMessage = _t("You are expected to scan one or more products or a package available at the picking's location");
                     } else {
                         errorMessage = _t('You are expected to scan one or more products.');
@@ -188,6 +253,51 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         }
     },
     
+    
+
+
+//    custom_events: _.extend({}, PickingClientAction.prototype.custom_events, {
+//        'picking_check_quality_done': '_onCheckQualityDone',
+//    }),
+
+    //--------------------------------------------------------------------------
+    // Private
+    //--------------------------------------------------------------------------
+
+//    _checkQualityDone: function () {
+//        var self = this;
+//        this.mutex.exec(function () {
+//            return self._save().then(function () {
+//                return self._rpc({
+//                    'model': 'stock.picking',
+//                    'method': 'check_quality_done',
+//                    'args': [[self.actionParams.pickingId]],
+//                }).then(function(res) {
+//                    var exitCallback = function () {
+//                        self.trigger_up('reload');
+//                    };
+//                    if (_.isObject(res)) {
+//                        var options = {
+//                            on_close: exitCallback,
+//                        };
+//                        return self.do_action(res, options)
+//                    } else {
+//                        console.log(_.isObject(res))
+//                        self.do_notify(_t("No more quality checks"), _t("All the quality checks have been done."));
+//                    }
+//                });
+//            });
+//        });
+//    },
+
+    //--------------------------------------------------------------------------
+    // Handlers
+    //--------------------------------------------------------------------------
+
+//    _onCheckQualityDone: function (ev) {
+//        ev.stopPropagation();
+//        this._checkQualityDone();
+//    },
 
 });
 return PickingQualityCheckClientAction;

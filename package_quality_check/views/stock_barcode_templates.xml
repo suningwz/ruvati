@@ -3,7 +3,9 @@
     <template id="assets_backend" name="stock_barcode_quality_control assets" inherit_id="web.assets_backend">
         <xpath expr="." position="inside">
 <!--            <script type="text/javascript" src="/package_quality_check/static/src/js/client_action/lines_widget.js"></script>-->
+            <script type="text/javascript" src="/package_quality_check/static/src/js/stock_barcode.js"></script>
             <script type="text/javascript" src="/package_quality_check/static/src/js/client_action/abstract_client_action.js"></script>
+<!--            <script type="text/javascript" src="/package_quality_check/static/src/js/stock_barcode.js"></script>-->
         </xpath>
     </template>
 </odoo>

@@ -27,6 +27,9 @@ class StockPicking(models.Model):
                         line.qty_done = line.product_uom_qty
                     if all(move.product_uom_qty == move.quantity_done for move in out_picking.move_lines):
                         out_picking.button_validate()
+                        if out_picking.sale_id.invoice_status == 'to invoice':
+                            out_picking.sale_id and out_picking.sale_id._create_invoices()
+                        out_picking.sale_id and out_picking.sale_id.invoice_ids and out_picking.sale_id.invoice_ids.filtered(lambda rec: rec.state == 'draft').action_post()
                 return res
         return super(StockPicking, self).button_validate()
 
