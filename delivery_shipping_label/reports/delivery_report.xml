@@ -18,16 +18,16 @@
         <field name="dpi">80</field>
     </record>
 
-        <report
-            id="action_report_packslip"
-            string="Shipping Label"
-            model="stock.picking"
-            report_type="qweb-pdf"
-            file="delivery_shipping_label.report_shipping_label"
-            name="delivery_shipping_label.report_shipping_label"
-            paperformat="delivery_shipping_label.paperformat_packing_slips"
-            menu="True"
-        />
+<!--        <report-->
+<!--            id="action_report_packslip"-->
+<!--            string="Shipping Label"-->
+<!--            model="stock.picking"-->
+<!--            report_type="qweb-pdf"-->
+<!--            file="delivery_shipping_label.report_shipping_label"-->
+<!--            name="delivery_shipping_label.report_shipping_label"-->
+<!--            paperformat="delivery_shipping_label.paperformat_packing_slips"-->
+<!--            menu="True"-->
+<!--        />-->
 
     </data>
 </odoo>

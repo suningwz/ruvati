@@ -9,7 +9,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//header" position="inside">
                     <field name="picking_type_id_code" invisible="1"/>
-                    <button name="generate_shipping_label" type="object" string="Print Shipping label" attrs="{'invisible': [('state', 'not in', ['done']), ('picking_type_id_code', '!=', 'PICK')]}"/>
+                    <button name="generate_shipping_label" type="object" string="Print Shipping label" attrs="{'invisible': ['|', ('state', '!=', 'done'), ('picking_type_id_code', '!=', 'PICK')]}"/>
                 </xpath>
 
             </field>
