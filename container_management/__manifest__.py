@@ -3,7 +3,7 @@
 
 {
     'name': 'Container Management',
-    'version': '1.1',
+    'version': '1.0',
     'category': 'Purchases',
     'author'  : "Confianz Global",
     'summary': "This module is used for tracking containers while ocean freight transfer",

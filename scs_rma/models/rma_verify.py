@@ -103,6 +103,7 @@ class RMARetVerify(models.Model):
                             'delivered_quantity': sale_line and sale_line.qty_delivered,
                             'order_quantity': sale_line and sale_line.product_uom_qty or 0,
                             'refund_qty': 1.0,
+                            'received_qty': 1.0,
                             'refund_price': sale_line.price_unit,
                             'price_unit': sale_line.price_unit or 0,
                             'price_subtotal': sale_line.price_subtotal or 0,
@@ -117,6 +118,15 @@ class RMARetVerify(models.Model):
                 total_refund_qty = sum(RMA.mapped('rma_sale_lines_ids').filtered(lambda r: r.product_id.id == product.id).mapped('refund_qty')) + 1.0
                 if sale_line and total_refund_qty > sale_line.qty_delivered:
                     raise ValidationError("Sorry!!! Something went wrong. \n You are trying to verify an accepted product.")
+            RMA_FOR_SALE = self.env['rma.ret.mer.auth'].search([('sale_order_id', '=', picking.sale_id.id), ('state', 'in', ['approve','verification']), ('rma_from_verify', '=', False)])
+            for rma in RMA_FOR_SALE:
+                rma_line = rma.rma_sale_lines_ids.filtered(lambda r: r.product_id.id == product.id)
+                if rma_line and rma_line.received_qty + 1.0 <= rma_line.refund_qty:
+                    rma_line.received_qty += 1.0
+                    return rma
+                else:
+                    continue
+                    
             if self.need_credit_memo:
                 rma_for_sale = self.env['rma.ret.mer.auth'].search([('sale_order_id', '=', picking.sale_id.id), ('state', '=', 'approve'), ('need_credit_memo', '=', True)])
                 for rma in rma_for_sale:
@@ -129,6 +139,8 @@ class RMARetVerify(models.Model):
 #                        rma.write({''})
                         if rma_line:
                             rma_line.refund_qty = new_return_qty
+                            if rma_line.received_qty + 1.0 <= new_return_qty:
+                                rma_line.received_qty += 1.0
                         else:
                             rma_line_vals.update({'rma_id': rma.id})
                             rma_sale_line = self.env['rma.sale.lines'].create(rma_line_vals)
@@ -138,7 +150,7 @@ class RMARetVerify(models.Model):
                     invoice_line = inv.invoice_line_ids.filtered(lambda r: r.product_id.id == product.id and r.quantity >= 1.0)
                     if invoice_line:
                         rma_vals.update({'need_credit_memo': True})
-                        rma_id = self.env['rma.ret.mer.auth'].create(rma_vals)
+                        rma_id = self.env['rma.ret.mer.auth'].with_context(rma_from_verify=True).create(rma_vals)
                         rma_line_vals.update({'rma_id': rma_id.id})
                         rma_sale_line = self.env['rma.sale.lines'].create(rma_line_vals)
                         inv.rma_id = rma_id.id
@@ -149,12 +161,14 @@ class RMARetVerify(models.Model):
                         rma_line = rma_without_invoice[0].rma_sale_lines_ids.filtered(lambda r: r.product_id.id == product.id)
                         if rma_line:
                             rma_line.refund_qty += 1.0
+                            if rma_line.received_qty + 1.0 <= rma_line.refund_qty:
+                                rma_line.received_qty += 1.0
                         else:
-                            rma_line_vals.update({'rma_id': rma_for_sale[0].id})
+                            rma_line_vals.update({'rma_id': rma_without_invoice[0].id})
                             rma_sale_line = self.env['rma.sale.lines'].create(rma_line_vals)
                         return rma_without_invoice[0]
                 rma_vals.update({'need_credit_memo': True})
-                rma_id = self.env['rma.ret.mer.auth'].create(rma_vals)
+                rma_id = self.env['rma.ret.mer.auth'].with_context(rma_from_verify=True).create(rma_vals)
                 rma_line_vals.update({'rma_id': rma_id.id})
                 rma_sale_line = self.env['rma.sale.lines'].create(rma_line_vals)
                 return rma_id
@@ -169,7 +183,7 @@ class RMARetVerify(models.Model):
                         rma_sale_line = self.env['rma.sale.lines'].create(rma_line_vals)
                     return rma_for_sale
                 rma_vals.update({'need_credit_memo': False})
-                rma_id = self.env['rma.ret.mer.auth'].create(rma_vals)
+                rma_id = self.env['rma.ret.mer.auth'].with_context(rma_from_verify=True).create(rma_vals)
                 rma_line_vals.update({'rma_id': rma_id.id})
                 rma_sale_line = self.env['rma.sale.lines'].create(rma_line_vals)
                 return rma_id

@@ -163,6 +163,7 @@ class RMARetMerAuth(models.Model):
     need_credit_memo = fields.Boolean(string="Need Refund Invoice?")
     customer_po_number = fields.Char(string="Customer PO number")
     tracking_number = fields.Char(string="Tracking Number")
+    rma_from_verify = fields.Boolean(string="Rma from Verify")
 #    rma_picking = fields.Char(string="Picking")
 #    product_barcode = fields.Char(string="Product")
     
@@ -213,6 +214,8 @@ class RMARetMerAuth(models.Model):
     def action_create_invoice(self):
         if self.invoice_ids:
             raise ValidationError('This RMA is invoiced.')
+        if not self.rma_from_verify:
+            self.state = 'approve'
         if self.state == 'approve':
             invoice_line_vals = []
             for rma_line in self.rma_sale_lines_ids:
@@ -1018,6 +1021,12 @@ class RMARetMerAuth(models.Model):
                 action = {'type': 'ir.actions.act_window_close'}
             return action
 
+    @api.model
+    def create(self, vals):
+        if self._context.get('rma_from_verify', False):
+            vals.update({'rma_from_verify': True})
+        return super(RMARetMerAuth, self).create(vals)
+
     def unlink(self):
         for rma in self:
             if rma.state == 'close':
@@ -1198,6 +1207,7 @@ class RmaSaleLines(models.Model):
     delivered_quantity = fields.Integer('Delivered Qty')
     price_unit = fields.Float('Unit Price')
     refund_qty = fields.Integer('Return Qty')
+    received_qty = fields.Integer('Received Qty')
     refund_price = fields.Float(compute='_compute_amount',
                                    string='Refund Price',)
     total_price = fields.Float(string='Total Price')
