@@ -196,6 +196,7 @@ class ContainerLines(models.Model):
                               ('received port', 'Received In Port'),
                               ('customs cleared','Customs Cleared'),
                               ('review','Review Shipment'),
+                              ('received partial','Partaily Received WH'),
                               ('received warehouse', 'Received In Warehouse')],  index=True, copy=False, track_visibility='always',store=True, default='draft', string="State")
     qty_transferred_to_wh = fields.Float(string="Qty Transferred to WH")
     line_customs_id = fields.Many2one('hbl.customs.duty', string="Line Customs Duty")
@@ -225,15 +226,22 @@ class ContainerLines(models.Model):
         return res
 
 #    @api.multi
-    def action_clear_customs(self):
-        hbl_line_ids = self.filtered(lambda rec:rec.state == 'received port')
-        hbl_line_ids.write({'state' : 'customs cleared'})
+#    def action_clear_customs(self):
+#        hbl_line_ids = self.filtered(lambda rec:rec.state == 'received port')
+#        hbl_line_ids.write({'state' : 'customs cleared'})
 
     @api.depends('mbl_id.etd')
     def compute_etd(self):
         for rec in self:
             rec.etd = rec.mbl_id.etd if rec.mbl_id else False
 
+    def action_clear_customs(self):
+        self.write({'state' : 'customs cleared'})
+        self.container_id.create_container_status_note(msg="Customs cleared for BOL %s" % (self.mbl_id.name), user_id=self.env.user)
+        print ('container 1111')
+        if all(state in ['customs cleared','received partial','received warehouse'] for state in self.mbl_id.mapped('hbl_line_ids').mapped('state')):
+            print ('container 22222')
+            self.mbl_id.with_context(container_clearance=True).action_clear_customs()
 
 #    @api.multi
     def action_received_in_warehouse(self):

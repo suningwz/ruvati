@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+## -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models, _
@@ -96,7 +96,9 @@ class SelectContainerWizard(models.TransientModel):
             raise UserError("No container Lines found in customs cleared state")
         location_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
 #        dest_input_loc_id = self.env['stock.warehouse'].search([('warehouse_type', '=', 'main_warehouse')]).wh_input_stock_loc_id
-        picking_type_id = self.env['stock.picking.type'].search([('code','=','internal'),('warehouse_id.warehouse_type','=','main_warehouse')], limit=1)
+#        picking_type_id = self.env['stock.picking.type'].search([('code','=','internal'),('warehouse_id.warehouse_type','=','main_warehouse')], limit=1)
+        warehouse = self.destination_loc_id and self.destination_loc_id.location_id.name.split('/')[0] or 'MWH'
+        picking_type_id = self.env['stock.picking.type'].search([('code','=','incoming'),('warehouse_id.code','=',warehouse)], limit=1)
         picking_ids = container_lines.mapped('po_id').mapped('picking_ids')
         move_lines = {}
         for line in container_lines:
@@ -132,7 +134,6 @@ class SelectContainerWizard(models.TransientModel):
         for m_line in move_lines.values():
             new_move = self.env['stock.move'].create(m_line)
             new_move._action_confirm()
-            print ('new moveeeeeee', new_move)
             new_move._action_assign()
             new_move.move_line_ids.write({'qty_done': new_move.product_uom_qty})
             new_move._action_done()

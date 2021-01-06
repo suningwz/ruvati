@@ -91,6 +91,7 @@
                                         <field name="container_id" required="1" options="{'no_quick_create': True}" domain="['|','|',('mhbl_id','=',False),('mhbl_id.mbl_no','=',context.get('default_mbl_no')),('mhbl_id','=',context.get('mhbl_id'))]"/>
                                         <field name="state" readonly="1"/>
                                         <field name="line_customs_id" invisible="1"/>
+                                        <button name="action_clear_customs" type="object" icon="fa-play"  string="Clear Customs" states="received port" context="{'reload' : True}"/>
                                     </tree>
                                 </field>
                             </page>

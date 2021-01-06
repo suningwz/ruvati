@@ -304,8 +304,9 @@ class MasterHouseBillLading(models.Model):
         for rec in self:
             self.hbl_line_ids.write({'state' : 'customs cleared'})
             self.write({'state' : 'customs cleared'})
-            container_ids = self.hbl_line_ids.container_id
-            container_ids.create_container_status_note(msg="Customs cleared for BOL %s" % (rec.name), user_id=self.env.user)
+            if not self._context.get('container_clearance', False):
+                container_ids = self.hbl_line_ids.container_id
+                container_ids.create_container_status_note(msg="Customs cleared for BOL %s" % (rec.name), user_id=self.env.user)
             if self.state in ['customs cleared','received partial','received warehouse']:
                 journal_domain = [
                     ('type', '=', 'purchase')

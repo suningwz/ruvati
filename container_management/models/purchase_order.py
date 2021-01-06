@@ -92,12 +92,11 @@ class PurchaseOrderLine(models.Model):
             domain = [('origin', '=', line.order_id.name), ('product_id', '=', line.product_id.id)]
             location_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
 #            ('warehouse_type', '=', 'ocean'), 
-            int_moves = self.env['stock.move'].search([('picking_type_id.code','=','internal'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id)]).filtered(lambda r : r.location_dest_id.location_id != location_id)
+            int_moves = self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id)]).filtered(lambda r : r.location_dest_id.location_id != location_id)
 #            for picking in line.order_id.picking_ids:
 #                qty_received_warehouse = 0
 #                moves = picking.move_lines.search(domain).filtered(
 #                    lambda r : r.picking_type_id.code == 'internal' and r.location_dest_id.location_id != location_id)
-
             qty_received_warehouse = 0.0
             for move in int_moves:
                 qty_received_warehouse += move.product_uom_qty
