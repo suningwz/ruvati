@@ -14,6 +14,7 @@ class StockPicking(models.Model):
         ('outgoing', 'Customers'),
         ('internal', 'Internal')], related='picking_type_id.code',
         readonly=True, store=True)
+    warehouse_type = fields.Selection(related="picking_type_id.warehouse_id.warehouse_type", string="Warehouse Type")
 
 
 #    def action_done(self):

@@ -101,7 +101,7 @@ class StockPicking(models.Model):
         packing_slip = self.env.ref('delivery_shipping_label.action_report_packslip').render_qweb_pdf(self.id)[0]
         return_label_ids = self.env['ir.attachment'].search(
             [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
-             ('name', 'like', '%s%%' % 'LabelFedex')])
+             '|', ('name', 'like', '%s%%' % 'LabelFedex'), ('name', 'like', '%s%%' % 'LabelUPS')]) 
         if not return_label_ids:
             raise UserError("Shipping labels not generated")
         return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
@@ -227,7 +227,7 @@ class StockPickingBatch(models.Model):
         """
         picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done' and r.is_create_label)
         if not picking_ids:
-            raise ValidationError("Please validate the picking to create its lablel")
+            raise ValidationError("No done pickings to create label")
         for rec in picking_ids:
             rec.action_create_label()
 

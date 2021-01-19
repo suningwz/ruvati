@@ -83,7 +83,7 @@
                                 <field name="hbl_line_ids" attrs="{'readonly' : [('state','not in',['ready','draft'])]}" context="{'default_mbl_no' :mbl_no}">
                                    <tree editable="inline">
                                         <field name="sequence" widget="handle"/>
-                                        <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True)]" required="1"  options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
+                                        <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True),('warehouse_type', '=', 'ocean')]" required="1"  options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
                                         <field name='purchase_line' domain="[('order_id', '=', po_id),('is_ocean_line','!=',True)]" required="1"  options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
                                         <field name='ordered_qty'/>
 
@@ -193,7 +193,7 @@
                                 <field name="hbl_line_ids" attrs="{'readonly' : [('state','not in',['ready','draft'])]}" context="{'default_mbl_no' :mbl_no, 'mhbl_id' : mhbl_id}">
                                    <tree editable="inline">
                                         <field name="sequence" widget="handle"/>
-                                        <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True)]" required="1"  options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
+                                        <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True),('warehouse_type', '=', 'ocean')]" required="1"  options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
                                         <field name='purchase_line' domain="[('order_id', '=', po_id),('is_ocean_line','!=',True)]" required="1"  options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
                                         <field name='ordered_qty'/>
 

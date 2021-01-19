@@ -6,6 +6,6 @@ from odoo import fields, models
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    customer_po_number = fields.Char(string="Customer PO Number")
+    customer_po_number = fields.Char(string="PO Number")
 
 SaleOrder()

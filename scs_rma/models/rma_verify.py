@@ -14,7 +14,7 @@ class RMARetVerify(models.Model):
     return_product = fields.Char(string="Product")
     need_credit_memo = fields.Boolean('Need Refund Invoice?', default=True)
     state = fields.Selection([('draft', 'Draft'), ('accepted', 'Accepted')], string="State", default="draft", copy=False)
-    customer_po_number = fields.Char(string="Customer PO number")
+    customer_po_number = fields.Char(string="PO number")
     tracking_number = fields.Char(string="Tracking Number")
     reason_id = fields.Many2one("rma.reasons", string="Reason")
     

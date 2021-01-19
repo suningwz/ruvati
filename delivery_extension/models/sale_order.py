@@ -31,5 +31,17 @@ class SaleOrder(models.Model):
             self.carrier_id = self.partner_id.carrier_id
             self.shipper_number = self.partner_id.shipper_number
 
+    @api.model
+    def create(self, vals):
+        sec_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
+        vals.update({'warehouse_id': sec_warehouse and sec_warehouse.id or vals.get('warehouse_id', False)})
+        return super(SaleOrder, self).create(vals)
+        
+    def write(self, vals):
+        sec_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
+        if self.warehouse_id != sec_warehouse:
+            vals.update({'warehouse_id': sec_warehouse and sec_warehouse.id or self.warehouse_id.id})
+        return super(SaleOrder, self).write(vals)
+
 SaleOrder()
 

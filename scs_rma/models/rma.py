@@ -161,7 +161,7 @@ class RMARetMerAuth(models.Model):
     company_id = fields.Many2one(
         'res.company', string='Company', default=_get_company)
     need_credit_memo = fields.Boolean(string="Need Refund Invoice?")
-    customer_po_number = fields.Char(string="Customer PO number")
+    customer_po_number = fields.Char(string="PO number")
     tracking_number = fields.Char(string="Tracking Number")
     rma_from_verify = fields.Boolean(string="Rma from Verify")
 #    rma_picking = fields.Char(string="Picking")

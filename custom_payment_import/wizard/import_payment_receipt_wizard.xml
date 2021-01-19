@@ -32,13 +32,13 @@
             <field name="payment_type">inbound</field>
         </record>
 
-         <record id="discount_account_form" model="account.account">
-            <field name="name">Discount Account</field>
-            <field name="code">101120</field>
-            <field name="user_type_id" ref="account.data_account_type_expenses"/>
-            <field name="reconcile" eval="True"/>
-             <field name="create_asset">no</field>
-         </record>
+<!--         <record id="discount_account_form" model="account.account">-->
+<!--            <field name="name">Discount Account</field>-->
+<!--            <field name="code">101120</field>-->
+<!--            <field name="user_type_id" ref="account.data_account_type_expenses"/>-->
+<!--            <field name="reconcile" eval="True"/>-->
+<!--             <field name="create_asset">no</field>-->
+<!--         </record>-->
 
         <act_window
             id="action_import_payment_receipt_wizard"

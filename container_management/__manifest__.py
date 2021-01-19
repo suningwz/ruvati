@@ -9,7 +9,7 @@
     'summary': "This module is used for tracking containers while ocean freight transfer",
     'description': """ """,
     'website': 'https://www.confianzit.com',
-    'depends': ['sale','purchase'],
+    'depends': ['sale','purchase','internal_transfer'],
     'images': ['static/description/icon.png'],
     'data': [
         'security/security.xml',

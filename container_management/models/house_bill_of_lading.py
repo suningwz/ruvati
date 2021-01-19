@@ -160,7 +160,7 @@ class MasterHouseBillLading(models.Model):
                                  'qty' : line.qty_to_load,
                                  'po_id' : line.po_id,
                                  'product_id' : line.purchase_line.product_id.id,
-                                 'hbl_id' : line.hbl_id
+                                 'hbl_id' : line.mbl_id
                                  })
 
         return po_lines
@@ -169,9 +169,6 @@ class MasterHouseBillLading(models.Model):
     def validate_to_ocean(self):
         self.ensure_one()
 #        self.hbl_ids.validate_to_ocean()
-        
-        
-        
         self.with_context(action_ready_from_container=True).action_ready()
         hbl_ids = self
         po_lines = self.calculate_quantity_to_receive()
@@ -179,7 +176,7 @@ class MasterHouseBillLading(models.Model):
 #        oc_loc_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
         for line in po_lines:
             p_order = line.get('po_id')
-            picking_id = p_order.picking_ids.filtered(lambda rec:rec.state not in ['draft','cancel','done'] and rec.warehouse_code == 'OC')
+            picking_id = p_order.picking_ids.filtered(lambda rec:rec.state not in ['draft','cancel','done'] and rec.warehouse_type == 'ocean')
             if not picking_id:
                 raise ValidationError("Shipment for purchase order %s either in 'Draft','Cancel' or 'Done' status.This can't be moved to ocean" % (p_order.name))
             if len(picking_id) == 1:
@@ -191,7 +188,7 @@ class MasterHouseBillLading(models.Model):
         picking = set(picking)
         for picking_id in picking:
             result=picking_id.button_validate()
-            picking_id.write({'carrier' : ("BOL # %s")%(line.get('hbl_id',False) and line.get('hbl_id',False).lading_no),
+            picking_id.write({'carrier' : ("BOL # %s")%(line.get('hbl_id',False) and line.get('hbl_id',False).mbl_no),
                               'bill_of_lading' : line.get('hbl_id',False) and line.get('hbl_id',False).name
                                })
             if result and result.get('res_id', False):
@@ -206,9 +203,9 @@ class MasterHouseBillLading(models.Model):
 #                })
 #                invoice_id.action_invoice_open()
 
-            if picking_id.move_lines  and picking_id.warehouse_code == 'OC' and line.get('hbl_id').mhbl_id.etd:
+            if picking_id.move_lines  and picking_id.warehouse_type == 'ocean' and line.get('hbl_id').etd:
 #                move_date = line.get('hbl_id').mhbl_id.etd.strftime("%Y-%m-%d") + " 12:00:00"
-                move_date = str(line.get('hbl_id').mhbl_id.etd) + " 12:00:00"
+                move_date = str(line.get('hbl_id').etd) + " 12:00:00"
                 picking_id.move_lines.write({'date' : datetime.strptime(move_date, DEFAULT_SERVER_DATETIME_FORMAT)})
 
         self.action_move_to_ocean()
@@ -302,12 +299,15 @@ class MasterHouseBillLading(models.Model):
         and the freight forwarder are the same person,there would be 2 types of bills
         """
         for rec in self:
-            self.hbl_line_ids.write({'state' : 'customs cleared'})
-            self.write({'state' : 'customs cleared'})
+            self.hbl_line_ids.filtered(lambda r: r.state == 'received port').write({'state' : 'customs cleared'})
+            if all(state == 'customs cleared' for state in self.hbl_line_ids.mapped('state')):
+                self.write({'state' : 'customs cleared'})
             if not self._context.get('container_clearance', False):
+                
                 container_ids = self.hbl_line_ids.container_id
+                print ('cccccccccc',self.hbl_line_ids, self.hbl_line_ids.container_id)
                 container_ids.create_container_status_note(msg="Customs cleared for BOL %s" % (rec.name), user_id=self.env.user)
-            if self.state in ['customs cleared','received partial','received warehouse']:
+            if self.state in ['customs cleared','received port','received warehouse']:
                 journal_domain = [
                     ('type', '=', 'purchase')
                 ]
@@ -1093,7 +1093,7 @@ class HouseBillLading(models.Model):
 #        oc_loc_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
         for line in po_lines:
             p_order = line.get('po_id')
-            picking_id = p_order.picking_ids.filtered(lambda rec:rec.state not in ['draft','cancel','done'] and rec.warehouse_code == 'OC')
+            picking_id = p_order.picking_ids.filtered(lambda rec:rec.state not in ['draft','cancel','done'] and rec.warehouse_type == 'ocean')
             if not picking_id:
                 raise ValidationError("Shipment for purchase order %s either in 'Draft','Cancel' or 'Done' status.This can't be moved to ocean" % (p_order.name))
             if len(picking_id) == 1:
@@ -1120,7 +1120,7 @@ class HouseBillLading(models.Model):
 #                })
 #                invoice_id.action_invoice_open()
 
-            if picking_id.move_lines  and picking_id.warehouse_code == 'OC' and line.get('hbl_id').mhbl_id.etd:
+            if picking_id.move_lines  and picking_id.warehouse_type == 'ocean' and line.get('hbl_id').mhbl_id.etd:
 #                move_date = line.get('hbl_id').mhbl_id.etd.strftime("%Y-%m-%d") + " 12:00:00"
                 move_date = str(line.get('hbl_id').mhbl_id.etd) + " 12:00:00"
                 picking_id.move_lines.write({'date' : datetime.strptime(move_date, DEFAULT_SERVER_DATETIME_FORMAT)})

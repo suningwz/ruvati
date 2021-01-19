@@ -9,7 +9,7 @@
             <form string="RMA">
                 <header>
                     <button name="rma_submit" states='new' string="Submit" type="object" class="oe_highlight"/>
-                    <button name="action_create_invoice" string="Create Invoice" type="object" class="oe_highlight" attrs="{'invisible': [('need_credit_memo', '=', False)]}"/>
+                    <button name="action_create_invoice" string="Create Invoice" type="object" class="oe_highlight" attrs="{'invisible': ['|', ('need_credit_memo', '=', False), ('inv_count', '!=', 0)]}"/>
                     <button name="create_receive_picking" states='verification' string="Generate Pickings" type="object" class="oe_highlight"/>
                 
                     <button name="rma_approve" attrs="{'invisible':['|',('state','!=','resolved'),('type','=','exchange')]}" string="Approve" type="object" class="oe_highlight"/>

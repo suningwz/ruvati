@@ -9,6 +9,7 @@ class ResPartner(models.Model):
     is_ship_collect = fields.Boolean(string="Ship Collect")
     carrier_id = fields.Many2one("delivery.carrier", string="Carrier")
     shipper_number = fields.Char(string="Shipper No.")
+    is_home_depot = fields.Boolean(string="Home Depot")
 
     @api.onchange('is_ship_collect')
     def onchange_is_ship_collect(self):

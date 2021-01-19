@@ -44,41 +44,39 @@ class ImportPaymentReceiptWizard(models.TransientModel):
             raise UserError("Choose appropriate payment method!")
         for i_data in vals:
             data = dict(i_data)
-            order = self.env['sale.order'].search(
-                [('customer_po_number', '=', data['PO Number/Text']), ('partner_id', '=', self.partner_id.id)], limit=1)
+            order = self.env['sale.order'].search([('customer_po_number', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
             if order:
                 if len(order.invoice_ids) > 1:
                     invoices = order.invoice_ids.filtered(lambda r: r.name == data['Invoice Number'])
                 else:
                     invoices = order.invoice_ids
             if invoices:
-                payment_vals = {
-                    'journal_id': journal_id.id,
-                    'payment_method_id': payment_method_id.id,
-                    'communication': self.check_number,
-                    'invoice_ids': [(6, 0, invoices.ids)],
-                    'amount': float(data['Net Amount']),
-                    'partner_id': invoices.partner_id.id,
-                    'partner_type': 'customer',
-                }
                 if invoices.type == 'out_invoice':
-                    payment_vals.update({'payment_type': 'inbound'})
+                    payment_vals = {
+                        'journal_id': journal_id.id,
+                        'payment_method_id': payment_method_id.id,
+                        'communication': self.check_number,
+                        'invoice_ids': [(6, 0, invoices.ids)],
+                        'payment_type': 'inbound',
+                        'amount': float(data['Net Amount']),
+                        'partner_id': invoices.partner_id.id,
+                        'partner_type': 'customer',
+                    }
                 if invoices.type == 'out_refund':
                     payment_vals.update({'payment_type': 'outbound'})
                 if data['Adjmt Amount']:
                     payment_dif = float_round(
-                        float(data['GrossAmount']) - float(data['Adjmt Amount']),
-                        precision_digits=2)
+                                    float(data['GrossAmount']) - float(data['Adjmt Amount']),
+                                    precision_digits=2)
                     write_of_account = invoices.company_id and invoices.company_id.writeoff_account_id
                     if not write_of_account:
-                        raise UserError("Missing required account, it is to be set inside the company.")
+                        raise UserError("Missing required account, is to be set inside the company.")
                     payment_vals['amount'] = payment_dif
-                    if payment_vals['amount']<0:
-                        raise UserError("The payment amount cannot be negative.!")
                     payment_vals['payment_difference'] = float(data['GrossAmount']) - payment_dif
                     payment_vals['writeoff_account_id'] = write_of_account.id
                     payment_vals['payment_difference_handling'] = 'reconcile'
                 payment_list_vals.append(payment_vals)
+
         return payment_list_vals
 
     def payment_receipt_wizard_save(self):
@@ -91,15 +89,15 @@ class ImportPaymentReceiptWizard(models.TransientModel):
                 file_reader = []
                 csv_reader = csv.DictReader(data_file, delimiter=',')
                 file_reader.extend(csv_reader)
+                print("file reader", file_reader)
             except:
                 raise UserError("Invalid file!")
 
             create_payment_vals = self.create_payment(file_reader)
             if create_payment_vals:
                 for vals in create_payment_vals:
-                    payments = self.env['account.payment'].create(vals)
-                    for payment in payments:
-                        payment.post()
+                    payment = self.env['account.payment'].create(vals)
+                    payment.post()
 
         elif self.import_option == 'xlsx':
             try:
@@ -120,9 +118,8 @@ class ImportPaymentReceiptWizard(models.TransientModel):
             create_payment_vals = self.create_payment(lines)
             if create_payment_vals:
                 for vals in create_payment_vals:
-                    payments = self.env['account.payment'].create(vals)
-                    for payment in payments:
-                        payment.post()
+                    payment = self.env['account.payment'].create(vals)
+                    payment.post()
 ImportPaymentReceiptWizard()
 
 

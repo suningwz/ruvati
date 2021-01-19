@@ -8,6 +8,7 @@ from odoo import api, fields, models, exceptions, _, tools
 from odoo.exceptions import UserError
 from odoo.tools import pdf
 from .fedex import FedexRequestShipCollect
+from .ups import UPSRequestRef
 from odoo.addons.delivery_ups.models.ups_request import UPSRequest, Package
 _logger = logging.getLogger(__name__)
 
@@ -54,11 +55,7 @@ class Provider(models.Model):
             srm.set_shipper(picking.company_id.partner_id, picking.picking_type_id.warehouse_id.partner_id)
             srm.set_recipient(picking.partner_id)
             
-            
-            
-            
-            
-            
+            # using customer's shipper number for UPS integration'
             if picking.is_ship_collect:
                 srm.shipping_charges_payment_ship_collect(picking.shipper_number)
             else:
@@ -94,7 +91,7 @@ class Provider(models.Model):
                     srm.duties_payment(picking.picking_type_id.warehouse_id.partner_id, picking.shipper_number, 'RECIPIENT')
                 else:
                     srm.duties_payment(picking.picking_type_id.warehouse_id.partner_id, superself.fedex_account_number, superself.fedex_duty_payment)
-                send_etd = self.env['ir.config_parameter'].get_param("delivery_fedex.send_etd")
+                send_etd = superself.env['ir.config_parameter'].get_param("delivery_fedex.send_etd")
                 srm.commercial_invoice(self.fedex_document_stock_type, send_etd)
 
             package_count = len(picking.package_ids) or 1
@@ -130,17 +127,31 @@ class Provider(models.Model):
 
                     package_weight = self._fedex_convert_weight(package.shipping_weight, self.fedex_weight_unit)
                     packaging = package.packaging_id
-                    srm._add_package(
+                    
+                    if order.partner_id.is_home_depot:
+                        srm._add_package(
                         package_weight,
                         package_code=packaging.shipper_package_code,
                         package_height=packaging.height,
                         package_width=packaging.width,
                         package_length=packaging.length,
                         sequence_number=sequence,
-                        po_number=po_number,
+                        po_number='8119',
                         dept_number=dept_number,
                         reference=picking.display_name,
                     )
+                    else:
+                        srm._add_package(
+                            package_weight,
+                            package_code=packaging.shipper_package_code,
+                            package_height=packaging.height,
+                            package_width=packaging.width,
+                            package_length=packaging.length,
+                            sequence_number=sequence,
+                            po_number=order.customer_po_number and order.customer_po_number or po_number,
+                            dept_number=dept_number,
+                            reference=picking.display_name,
+                        )
                     srm.set_master_package(net_weight, package_count, master_tracking_id=master_tracking_id)
                     request = srm.process_shipment()
                     package_name = package.name or sequence
@@ -172,19 +183,7 @@ class Provider(models.Model):
                         if not request.get('errors_message'):
                             package_labels.append((package_name, srm.get_label()))
 
-                            if _convert_curr_iso_fdx(order_currency.name) in request['price']:
-                                carrier_price = request['price'][_convert_curr_iso_fdx(order_currency.name)]
-                            else:
-                                _logger.info("Preferred currency has not been found in FedEx response")
-                                company_currency = picking.company_id.currency_id
-                                if _convert_curr_iso_fdx(company_currency.name) in request['price']:
-                                    amount = request['price'][_convert_curr_iso_fdx(company_currency.name)]
-                                    carrier_price = company_currency._convert(
-                                        amount, order_currency, company, order.date_order or fields.Date.today())
-                                else:
-                                    amount = request['price']['USD']
-                                    carrier_price = company_currency._convert(
-                                        amount, order_currency, company, order.date_order or fields.Date.today())
+                            carrier_price = self._get_request_price(request['price'], order, order_currency)
 
                             carrier_tracking_ref = carrier_tracking_ref + "," + request['tracking_number']
 
@@ -209,16 +208,28 @@ class Provider(models.Model):
             ###############
             elif package_count == 1:
                 packaging = picking.package_ids[:1].packaging_id or picking.carrier_id.fedex_default_packaging_id
-                srm._add_package(
-                    net_weight,
-                    package_code=packaging.shipper_package_code,
-                    package_height=packaging.height,
-                    package_width=packaging.width,
-                    package_length=packaging.length,
-                    po_number=po_number,
-                    dept_number=dept_number,
-                    reference=picking.display_name,
-                )
+                if order.partner_id.is_home_depot:
+                    srm._add_package(
+                        net_weight,
+                        package_code=packaging.shipper_package_code,
+                        package_height=packaging.height,
+                        package_width=packaging.width,
+                        package_length=packaging.length,
+                        po_number='8119',
+                        dept_number=dept_number,
+                        reference=picking.display_name,
+                    )
+                else:
+                    srm._add_package(
+                        net_weight,
+                        package_code=packaging.shipper_package_code,
+                        package_height=packaging.height,
+                        package_width=packaging.width,
+                        package_length=packaging.length,
+                        po_number=order.customer_po_number and order.customer_po_number or po_number,
+                        dept_number=dept_number,
+                        reference=picking.display_name,
+                    )
                 srm.set_master_package(net_weight, 1)
 
                 # Ask the shipping to fedex
@@ -354,9 +365,9 @@ class Provider(models.Model):
         ResCurrency = self.env['res.currency']
         for picking in pickings:
             if picking.is_ship_collect:
-                srm = UPSRequest(self.log_xml, superself.ups_username, superself.ups_passwd, picking.shipper_number, superself.ups_access_number, self.prod_environment)
+                srm = UPSRequestRef(self.log_xml, superself.ups_username, superself.ups_passwd, picking.shipper_number, superself.ups_access_number, self.prod_environment)
             else:
-                srm = UPSRequest(self.log_xml, superself.ups_username, superself.ups_passwd, superself.ups_shipper_number, superself.ups_access_number, self.prod_environment)
+                srm = UPSRequestRef(self.log_xml, superself.ups_username, superself.ups_passwd, superself.ups_shipper_number, superself.ups_access_number, self.prod_environment)
             packages = []
             package_names = []
             if picking.package_ids:
@@ -399,26 +410,23 @@ class Provider(models.Model):
                 raise UserError(check_value)
 
             package_type = picking.package_ids and picking.package_ids[0].packaging_id.shipper_package_code or self.ups_default_packaging_id.shipper_package_code
-            
-            
-            
-            
-            
+
+            # using customer's shipper number for UPS integration'
             if picking.is_ship_collect:
                 srm.send_shipping(
                 shipment_info=shipment_info, packages=packages, shipper=picking.company_id.partner_id, ship_from=picking.picking_type_id.warehouse_id.partner_id,
                 ship_to=picking.partner_id, packaging_type=package_type, service_type=ups_service_type, duty_payment='RECIPIENT',
                 label_file_type=self.ups_label_file_type, ups_carrier_account=picking.shipper_number, saturday_delivery=picking.carrier_id.ups_saturday_delivery,
-                cod_info=cod_info)
+                cod_info=cod_info, order=picking.sale_id)
             else:
                 srm.send_shipping(
                     shipment_info=shipment_info, packages=packages, shipper=picking.company_id.partner_id, ship_from=picking.picking_type_id.warehouse_id.partner_id,
                     ship_to=picking.partner_id, packaging_type=package_type, service_type=ups_service_type, duty_payment=picking.carrier_id.ups_duty_payment,
                     label_file_type=self.ups_label_file_type, ups_carrier_account=ups_carrier_account, saturday_delivery=picking.carrier_id.ups_saturday_delivery,
-                    cod_info=cod_info)
+                    cod_info=cod_info, order=picking.sale_id)
             result = srm.process_shipment()
             if result.get('error_message'):
-                raise UserError(result['error_message'])
+                raise UserError(result['error_message'].__str__())
 
             order = picking.sale_id
             company = order.company_id or picking.company_id or self.env.company
@@ -464,3 +472,5 @@ Provider()
 
 def _convert_curr_iso_fdx(code):
     return FEDEX_CURR_MATCH.get(code, code)
+    
+

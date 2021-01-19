@@ -20,12 +20,24 @@
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
                 <field name="location_dest_id" position="after">
-                <field name="warehouse_code" invisible="1"/>
-                    <field name="mbl_id" domain="[('state','=','received port')]" attrs="{'invisible': ['|',('picking_type_code','!=','internal'),('warehouse_code','!=','OC')]}"/>
-                    <field name="container_id" domain="[('mhbl_id','=',mbl_id),('state','in',('customs cleared','partial clearence','received partial'))]" attrs="{'invisible': ['|',('picking_type_code','!=','internal'),('warehouse_code','!=','OC')],'required':[('mbl_id','!=',False)]}"/>
-                    <field name="po_id" context="{'container_id': container_id}" attrs="{'invisible': ['|',('picking_type_code','!=','internal'),('warehouse_code','!=','OC')],'required':[('container_id','!=',False)]}"/>
+                    <field name="warehouse_code" invisible="1"/>
+                    <field name="warehouse_type" invisible="1"/>
+                    <field name="bill_of_lading" invisible="1"/>
+                    <field name="direct_transfer_done" invisible="1"/>
+                    <field name="mbl_id" domain="[('state','in',['received port','customs cleared'])]" attrs="{'invisible': ['|',('picking_type_code','!=','incoming'),('warehouse_type','!=','main_warehouse')]}"/>
+                    <field name="container_id" domain="[('mhbl_id','=',mbl_id),('state','in',('customs cleared','partial clearence','received partial'))]" attrs="{'invisible': ['|',('picking_type_code','!=','incoming'),('warehouse_type','!=','main_warehouse')],'required':[('mbl_id','!=',False)]}"/>
+                    <field name="po_id" context="{'container_id': container_id}" attrs="{'invisible': ['|',('picking_type_code','!=','incoming'),('warehouse_type','!=','main_warehouse')],'required':[('container_id','!=',False)]}"/>
 <!--                    <field name="is_transfer_done" invisible="1" />-->
                 </field>
+                <xpath expr="//button[@name='action_toggle_is_locked']" position="after">
+                    <button name="%(action_view_container_wizard)d" string="Transfer To Warehouse" type="action" class="btn-primary" attrs="{'invisible': ['|', '|', ('warehouse_type', '!=', 'ocean'), ('direct_transfer_done', '=', True), '|', ('bill_of_lading', '!=', False), ('state', '!=', 'done')]}" context="{'direct_transfer': True}"/>
+                </xpath>
+                <xpath expr="//field[@name='location_id']" position="replace">
+                    <field name="location_id" options="{'no_create': True}" groups="stock.group_stock_multi_locations"/>
+                </xpath>
+                <xpath expr="//field[@name='move_ids_without_package']" position="attributes">
+                    <attribute name="attrs">{'readonly': ['|',('container_id','!=',False),'&amp;', ('state', '=', 'done'), ('is_locked', '=', True)]}</attribute>
+                </xpath>
 
                 <xpath expr="//field[@name='move_ids_without_package']" position="before">
                     <button name="load_from_container" type="object" string="Load Container Lines" class="oe_link" attrs="{'invisible':['|',('container_id','=',False),('state','!=','draft')]}"/>
@@ -55,6 +67,23 @@
             </field>
         </record>
         
+<!--        <record id="view_stock_move_tree_inherit_container" model="ir.ui.view">-->
+<!--            <field name="name">stock.move.tree.inherit.container</field>-->
+<!--            <field name="model">stock.move.line</field>-->
+<!--            <field name="inherit_id" ref="stock.view_stock_move_line_detailed_operation_tree"/>-->
+<!--            <field name="arch" type="xml">-->
+<!--                <field name="product_id" position="after">-->
+<!--                    <field name="container_line_id" invisible="1"/>-->
+<!--                </field>-->
+<!--                <xpath expr="//field[@name='product_id']" position="attributes">-->
+<!--                    <attribute name="attrs">{'readonly': [('container_line_id','!=',False)]}</attribute>-->
+<!--                </xpath>-->
+<!--                <xpath expr="//field[@name='qty_done']" position="attributes">-->
+<!--                    <attribute name="attrs">{'readonly': [('container_line_id','!=',False)]}</attribute>-->
+<!--                </xpath>-->
+<!--            </field>-->
+<!--        </record>-->
+<!--        -->
 <!--        <record id="view_warehouse_inherit_container" model="ir.ui.view">-->
 <!--            <field name="name">view.warehouse.inherit.container</field>-->
 <!--            <field name="model">stock.warehouse</field>-->

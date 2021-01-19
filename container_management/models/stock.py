@@ -12,6 +12,12 @@ class StockMove(models.Model):
 #    purchase_line_id = fields.Many2one('purchase.order.line', string="PO Line")
 
 
+#class StockMove(models.Model):
+#    _inherit = "stock.move.line"
+
+#    container_line_id = fields.Many2one('container.line','Container Lines')
+
+
 StockMove()
 
 class StockPicking(models.Model):
@@ -22,7 +28,8 @@ class StockPicking(models.Model):
     po_id = fields.Many2one('purchase.order',string="Purchase Order", readonly=True, states={'draft': [('readonly', False)]})
     warehouse_code = fields.Char(related="picking_type_id.warehouse_id.code", string="Warehouse code")
     carrier = fields.Char(string="Carrier")
-    bill_of_lading = fields.Char(string="House Bill of Lading")
+    bill_of_lading = fields.Char(string="Bill of Lading")
+    direct_transfer_done = fields.Boolean(string="Done Direct Transfer")
 #    is_transfer_done = fields.Boolean(stirng= "Internal Transfer Done", copy=False)
 
 #Inheriting this mode because client will do direct internal transfer from oc/stock to wrehouse
@@ -34,7 +41,7 @@ class StockPicking(models.Model):
             container_line_ids = self.container_id.mapped('container_lines').ids
             for index,line in enumerate(self.move_lines):
                 if line.product_id.id not in product_ids:
-                    raise ValidationError('You canot add new product %s'% line.product_id.display_name)
+                    raise ValidationError('You cannot add new product %s'% line.product_id.display_name)
                 if line.container_line_id.id not in container_line_ids:
                     raise ValidationError('Container_line_id for product at row no %s is invalid.Please Delete and reload the move line' % str(index+1))
                 if self.po_id.id!=line.container_line_id.po_id.id:
@@ -66,9 +73,26 @@ class StockPicking(models.Model):
         self.move_lines.unlink()
 
 #    @api.multi
+#    def write(self,vals):
+#        res = super(StockPicking, self).write(vals)
+#        self._update_status()
+#        return res
+
     def write(self,vals):
         res = super(StockPicking, self).write(vals)
-        self._update_status()
+        for picking in self:
+            if picking.state=='done':
+                if picking.picking_type_code == 'incoming' \
+                 and picking.container_id and picking.picking_type_id.warehouse_id.warehouse_type=='main_warehouse':
+                    picking.move_lines.write({'container_ids' : picking.container_id.ids,'mhbl_ids' : picking.move_lines.mapped('container_line_id.mbl_id').ids})
+                    container_lines = picking.move_lines.mapped('container_line_id').filtered(lambda rec:rec.state=='customs cleared')
+                    if container_lines:
+                        warehouse = picking.location_dest_id.display_name
+                        container_lines.with_context(post_track_msg=True, warehouse=warehouse).action_received_in_warehouse()
+                        picking.po_id.picking_ids._update_status()
+                if picking.picking_type_code == 'incoming' \
+                 and picking.picking_type_id.warehouse_id.warehouse_type=='ocean':
+                    picking._update_status()
         return res
 
 #    @api.multi
@@ -95,28 +119,51 @@ class StockPicking(models.Model):
                 move_id = self.env['stock.move'].create(vals)
                 move_id.picking_id = self.id
 
+#    def load_from_container(self):
+#        move_lines = []
+#        if self.move_line_ids_without_package:
+#            self.move_line_ids_without_package.unlink()
+#        if self.mbl_id and self.container_id and self.po_id:
+#            container_lines = self.container_id.container_lines.filtered(lambda rec:rec.po_id.id==self.po_id.id and rec.state=='customs cleared')
+#            for line in container_lines:
+#                vals = {'product_id': line.purchase_line.product_id.id,
+#                        'qty_done' : line.qty_to_load,
+#                        'product_uom_id' : 1,
+#                        'location_id' : self.location_id.id,
+#                        'location_dest_id' :self.location_dest_id.id,
+#                        'container_line_id' : line.id
+#                       }
+#                move_line = self.env['stock.move.line'].create(vals)
+#                move_line.picking_id = self.id
+
 #    @api.multi
     def _update_status(self):
         for picking in self:
             order = picking.purchase_id
+            print ('orderrrrrrrr', order)
             warehouse_id = order.picking_type_id.warehouse_id
             # if order and order.picking_type_id and order.picking_type_id.warehouse_id.code == 'OC':
             if order and order.state != 'cancel':
-                po_qty_ocean = qty_received = ordered_qty = 0
+                po_qty_ocean = qty_received = ordered_qty = qty_received_warehouse = 0
                 for line in order.order_line:
                     qty_received += line.qty_received
                     ordered_qty += line.product_qty
+                    qty_received_warehouse += line.qty_received_warehouse
                     po_qty_ocean += (line.qty_received - line.qty_received_warehouse)
-                if warehouse_id.code == 'OC':
+                    print ('lineeeeeeeee', po_qty_ocean, line.qty_received, line.qty_received_warehouse, ordered_qty)
+                if warehouse_id.warehouse_type == 'ocean':
                     if po_qty_ocean > 0 :
+                        print ('oeannnnnnnnn')
                         order.state = 'transit'
-                    elif qty_received == ordered_qty:
+                    elif qty_received_warehouse == ordered_qty:
+                        print ('doneeeeeee')
                         order.state = 'done'
                     else:
+                        print ('purchaseeeeee')
                         order.state = 'purchase'
                 else:
                     order.state = (qty_received == ordered_qty) and 'done' or 'purchase'
-
+#            print (hi)
 
 #    @api.multi
 #    def write(self, vals):

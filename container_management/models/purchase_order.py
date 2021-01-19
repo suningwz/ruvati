@@ -19,6 +19,7 @@ class PurchaseOrder(models.Model):
         ('done', 'Received'),
         ('cancel', 'Cancelled')
         ], string='Status', readonly=True, index=True, copy=False, default='draft', tracking=True)
+    warehouse_type = fields.Selection(related="picking_type_id.warehouse_id.warehouse_type", string="Warehouse Type")
 
     @api.depends('state','order_line.is_ocean_line')
     def compute_is_ocean_order(self):
@@ -32,6 +33,21 @@ class PurchaseOrder(models.Model):
         """
         for order in self:
             order.containers_count = len(order.container_line_ids.mapped('container_id'))
+
+#    @api.depends('order_line.move_ids.returned_move_ids',
+#                 'order_line.move_ids.state',
+#                 'order_line.move_ids.picking_id')
+#    def _compute_picking(self):
+#        for order in self:
+#            pickings = self.env['stock.picking']
+#            for line in order.order_line:
+#                # We keep a limited scope on purpose. Ideally, we should also use move_orig_ids and
+#                # do some recursive search, but that could be prohibitive if not done correctly.
+#                moves = line.move_ids
+#                pickings |= moves.mapped('picking_id')
+#                print ('lineeeeeeee', line.move_ids)
+#            order.picking_ids = pickings
+#            order.picking_count = len(pickings)
 
 #    def action_view_picking(self):
 #        """ This function returns an action that display existing picking orders of given purchase order ids. When only one found, show the picking immediately.
@@ -89,18 +105,22 @@ class PurchaseOrderLine(models.Model):
     @api.depends('order_id')
     def _compute_qty_received_warehouse(self):
         for line in self:
-            domain = [('origin', '=', line.order_id.name), ('product_id', '=', line.product_id.id)]
-            location_id = self.env['stock.warehouse'].search([('code', '=', 'OC')]).lot_stock_id
-#            ('warehouse_type', '=', 'ocean'), 
-            int_moves = self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id)]).filtered(lambda r : r.location_dest_id.location_id != location_id)
-#            for picking in line.order_id.picking_ids:
-#                qty_received_warehouse = 0
-#                moves = picking.move_lines.search(domain).filtered(
-#                    lambda r : r.picking_type_id.code == 'internal' and r.location_dest_id.location_id != location_id)
-            qty_received_warehouse = 0.0
-            for move in int_moves:
-                qty_received_warehouse += move.product_uom_qty
-            line.qty_received_warehouse = qty_received_warehouse
+            if line.order_id.picking_type_id.warehouse_id.warehouse_type == 'ocean':
+                domain = [('origin', '=', line.order_id.name), ('product_id', '=', line.product_id.id)]
+                location_id = self.env['stock.warehouse'].search([('warehouse_type', '=', 'ocean')]).lot_stock_id
+    #            ('warehouse_type', '=', 'ocean'), 
+                int_moves = self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id), ('state', '=', 'done')]).filtered(lambda r : r.location_dest_id.location_id != location_id)
+                print ('movesssssssss', self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id)]))
+    #            for picking in line.order_id.picking_ids:
+    #                qty_received_warehouse = 0
+    #                moves = picking.move_lines.search(domain).filtered(
+    #                    lambda r : r.picking_type_id.code == 'internal' and r.location_dest_id.location_id != location_id)
+                qty_received_warehouse = 0.0
+                for move in int_moves:
+                    qty_received_warehouse += move.product_uom_qty
+                line.qty_received_warehouse = qty_received_warehouse
+            else:
+                line.qty_received_warehouse = line.qty_received
             
     @api.depends('order_id', 'qty_received_warehouse', 'qty_received', 'product_qty')
     def _compute_qty_to_ship(self):
@@ -110,7 +130,10 @@ class PurchaseOrderLine(models.Model):
     @api.depends('order_id', 'qty_received_warehouse', 'qty_received')
     def _compute_qty_received_ocean(self):
         for line in self:
-            line.qty_received_ocean = line.qty_received - line.qty_received_warehouse
+            if line.order_id.picking_type_id.warehouse_id.warehouse_type == 'ocean':
+                line.qty_received_ocean = line.qty_received - line.qty_received_warehouse
+            else:
+                line.qty_received_ocean = 0.0
 #            print ('qtyyyy', line)
 #            domain = [('origin', '=', line.order_id.name), ('product_id', '=', line.product_id.id)]
 #            location_id = self.env['stock.warehouse'].search([('warehouse_type', '=', 'ocean'), ('code', '=', 'OC')]).lot_stock_id

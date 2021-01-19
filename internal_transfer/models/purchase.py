@@ -12,6 +12,14 @@ class PurchaseOrder(models.Model):
         if res and res.partner_id.picking_type_id:
             res.picking_type_id = res.partner_id.picking_type_id.id
         return res
+        
+    def write(self, vals):
+        if vals.get('partner_id', False):
+            partner = self.env['res.partner'].browse(vals.get('partner_id'))
+            vals.update({'picking_type_id': partner.picking_type_id and partner.picking_type_id.id or self.picking_type_id.id})
+        return super(PurchaseOrder, self).write(vals)
+    
+    
 
 
 PurchaseOrder()

@@ -201,8 +201,7 @@ class ProcurementGroup(models.Model):
         errors = []
 
         m_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'main_warehouse')], limit=1)
-        oc_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'ocean'), ('code', '=', 'OC')],
-                                                          limit=1)
+        oc_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'ocean')], limit=1)
         s_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
         internal_transit_loc = self.env['stock.location'].search(
             [('usage', '=', 'internal_transit')], limit=1)
@@ -326,6 +325,7 @@ class ProcurementGroup(models.Model):
             if balance_qty > 0:
                 if hasattr(self.env['stock.rule'], '_run_%s' % action):
                     try:
+                        print ('run moveeeeeeeeee', action)
                         getattr(self.env['stock.rule'], '_run_%s' % action)(proc_list or procurements)
                     except UserError as e:
                         errors.append(e.name)

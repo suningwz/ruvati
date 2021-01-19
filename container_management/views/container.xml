@@ -52,7 +52,7 @@
                         <field name="state" widget="statusbar" statusbar_visible="draft,ready,in ocean,received port,customs cleared,received warehouse" readonly="1"/>
                         <button name='action_review_shipment' string="Review Shipment" type="object" states="customs cleared"/>
                         <button name='action_ready_to_pick' string="Ready To Pick" type="object" states="review"/>
-                        <button name="%(action_view_container_wizard)d" string="Transfer To Warehouse" type="action" class="btn-primary"  states="customs cleared,received partial"/>
+                        <button name="%(action_view_container_wizard)d" string="Transfer To Warehouse" type="action" class="btn-primary"  states="customs cleared,received partial" context="{'direct_transfer': False}"/>
                     </header>
                     <sheet>
                         <div class="oe_button_box" name="button_box">
@@ -79,7 +79,7 @@
                             <page string="Container Lines">
                                 <field name="container_lines" context="{'mhbl_id': mhbl_id}">
                                    <tree editable="inline">
-                                        <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True)]" required="1" options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
+                                        <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True),('warehouse_type', '=', 'ocean')]" required="1" options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
                                         <field name='purchase_line' domain="[('order_id', '=', po_id),('is_ocean_line','!=',True)]" required="1" options="{'no_quick_create': True, 'no_create_edit' : True, 'no_create': True}"/>
                                         <field name='ordered_qty'/>
                                         <field name='qty_to_load' required="1"/>
@@ -164,7 +164,7 @@
                                 <field name="etd"/>
                             </group>
                             <group>
-                                <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True)]" options="{'no_quick_create': True, 'no_create_edit' : True}"/>
+                                <field name='po_id' domain="[('state','in',['purchase','transit']),('is_ocean_order','!=',True),('warehouse_type', '=', 'ocean')]" options="{'no_quick_create': True, 'no_create_edit' : True}"/>
                                 <field name='purchase_line' domain="[('order_id', '=', po_id),('is_ocean_line','!=',True)]" options="{'no_quick_create': True, 'no_create_edit' : True}"/>
                                 <field name='qty_to_load'/>
                             </group>
