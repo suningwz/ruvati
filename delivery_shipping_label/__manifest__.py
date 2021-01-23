@@ -18,7 +18,8 @@ This Module provides the changes in inventory related operations.
     'data': [
         'reports/packing_slip_template.xml',
         'reports/delivery_report.xml',
-        'views/stock_picking.xml'
+        'views/stock_picking.xml',
+        'views/product_view.xml'
 
     ],
     'qweb': [],

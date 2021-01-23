@@ -44,6 +44,34 @@ class StockPicking(models.Model):
             else:
                 raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
 
+    def put_in_pack(self):
+        self.ensure_one()
+        if self.state not in ('done', 'cancel'):
+            picking_move_lines = self.move_line_ids
+            if (
+                    not self.picking_type_id.show_reserved
+                    and not self.env.context.get('barcode_view')
+            ):
+                picking_move_lines = self.move_line_nosuggest_ids
+
+            move_line_ids = picking_move_lines.filtered(lambda ml:
+                                                        float_compare(ml.qty_done, 0.0,
+                                                                      precision_rounding=ml.product_uom_id.rounding) > 0
+                                                        and not ml.result_package_id
+                                                        )
+            if not move_line_ids:
+                move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
+                                                                                     precision_rounding=ml.product_uom_id.rounding) > 0 and float_compare(
+                    ml.qty_done, 0.0,
+                    precision_rounding=ml.product_uom_id.rounding) == 0)
+            if move_line_ids:
+                res = self._pre_put_in_pack_hook(move_line_ids)
+
+                res = self._put_in_pack(move_line_ids)
+                return res
+            else:
+                raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
+
     def _put_in_pack(self, move_line_ids):
         package = False
         for pick in self:
@@ -75,12 +103,25 @@ class StockPicking(models.Model):
                 for line_range in range(int(pack_line.product_uom_qty)):
                     new_pack_line = pack_line
                     if pack_line.product_uom_qty > 1 and pack_line_count != pack_line.product_uom_qty:
-                        pack_line_count +=1
+                        pack_line_count += 1
                         new_pack_line = pack_line.copy(
                             default={'product_uom_qty': 0, 'qty_done': 1})
                         # pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
                         new_pack_line.write({'product_uom_qty': 1})
-                    package = self.env['stock.quant.package'].create({'shipping_weight':2})
+
+                    package = self.env['stock.quant.package'].create({
+                        'shipping_weight': pack_line.product_id.weight,
+                        'height': pack_line.product_id.height,
+                        'width': pack_line.product_id.width,
+                        'length': pack_line.product_id.length
+                    })
+                    packaging_id = self.env['product.packaging'].create({
+                        'name': package.name,
+                        'height': pack_line.product_id.height,
+                        'width': pack_line.product_id.width,
+                        'length': pack_line.product_id.length
+                    })
+                    package.packaging_id = packaging_id.id
 
                     package_level = self.env['stock.package_level'].create({
                         'package_id': package.id,
@@ -106,8 +147,8 @@ class StockPicking(models.Model):
             raise UserError("Shipping labels not generated")
         return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
         packing_slips = [packing_slip]
-        
-        merged_pdf = self.merge_pdfs(packing_slips, return_labels)
+        delivery_type = self.carrier_id.delivery_type
+        merged_pdf = self.with_context(delivery_type=delivery_type).merge_pdfs(packing_slips, return_labels)
         attachment_id = self.env['ir.attachment'].create({
             'name': "Shipping_Label.pdf",
             'type': 'binary',
@@ -133,25 +174,15 @@ class StockPicking(models.Model):
             for page in range(0, reader_label.getNumPages()):
                 page_rec = reader_packing.getPage(page)
                 page_label = reader_label.getPage(page)
-                page_label.cropBox.setLowerRight((321, 0))
-                page_label.cropBox.setUpperRight((321,612))
-                page_label.cropBox.setLowerLeft((31, 0))
-                page_label.cropBox.setUpperLeft((31, 612))
-                page_label_clockwise = page_label.rotateClockwise(270)
-                
-
-                # newHeight = 153
-                # newWidth = 102
-                #
-                # # Conversion to points
-                # newHeight = newHeight
-                # newWidth = newWidth
-                #
-                # page_rec.scaleTo(width=102, height=153)
-                #
-                # page_label_clockwise.scaleTo(width=102, height=153)
-
-
+                if self._context.get('delivery_type') == 'fedex':
+                    page_label.cropBox.setLowerRight((321, 0))
+                    page_label.cropBox.setUpperRight((321, 612))
+                    page_label.cropBox.setLowerLeft((31, 0))
+                    page_label.cropBox.setUpperLeft((31, 612))
+                    page_label_clockwise = page_label.rotateClockwise(270)
+                else:
+                    page_label.scaleTo(6*72, 4*72)
+                    page_label_clockwise = page_label.rotateClockwise(90)
                 writer.addPage(page_label_clockwise)
                 writer.addPage(page_rec)
 
@@ -180,10 +211,10 @@ class StockPickingBatch(models.Model):
         """
         attachments = []
         attachment_ids = []
-        picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done')
-        if not picking_ids:
-            raise ValidationError("Please validate the picking to print lablel")
-        for picking in picking_ids:
+#        picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done')
+#        if not picking_ids:
+#            raise ValidationError("Please validate the picking to print lablel")
+        for picking in self.picking_ids:
             attachments.append(picking.generate_shipping_label())
         for attachment in attachments:
             url = attachment['url'].split('?')
@@ -225,9 +256,9 @@ class StockPickingBatch(models.Model):
     def action_create_label(self):
         """ Creates shipping label for batch of picking
         """
-        picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done' and r.is_create_label)
+        picking_ids = self.picking_ids.filtered(lambda r: r.is_create_label)
         if not picking_ids:
-            raise ValidationError("No done pickings to create label")
+            raise ValidationError("Label is created for all pickings.")
         for rec in picking_ids:
             rec.action_create_label()
 
