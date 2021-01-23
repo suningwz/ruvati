@@ -9,7 +9,7 @@ class StockPickingBatch(models.Model):
     _inherit = "stock.picking.batch"
 
 #    warehouse_id = fields.Many2one('stock.warehouse', string="Pick From", required=True)
-    picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True)
+    picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True, domain="[('sequence_code', '=', 'PICK')]")
 #    , domain="[('sequence_code', '=', 'PICK')]"
     picking_ids = fields.One2many(
         'stock.picking', 'batch_id', string='Transfers',

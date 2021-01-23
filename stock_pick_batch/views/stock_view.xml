@@ -13,10 +13,14 @@
                         <field name="picking_type_id"/>
                     </group>
                 </xpath>
+                <button name="action_cancel" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </button>
                 <xpath expr="//header" position="inside">
                     <field name="picking_type_id_code" invisible="1"/>
-                    <button name="generate_shipping_label" type="object" string="Print Shipping label" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
                     <button name="action_create_label" string="Create Label" type="object" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
+                    <button name="generate_shipping_label" type="object" string="Print Shipping label" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
+                    
                 </xpath>
             </field>
         </record>
