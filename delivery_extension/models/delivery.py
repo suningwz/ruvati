@@ -148,7 +148,7 @@ class Provider(models.Model):
                             package_width=packaging.width,
                             package_length=packaging.length,
                             sequence_number=sequence,
-                            po_number=order.customer_po_number and order.customer_po_number or po_number,
+                            po_number=order.client_order_ref and order.client_order_ref or po_number,
                             dept_number=dept_number,
                             reference=picking.display_name,
                         )
@@ -165,6 +165,7 @@ class Provider(models.Model):
                         if not request.get('errors_message'):
                             master_tracking_id = request['master_tracking_id']
                             package_labels.append((package_name, srm.get_label()))
+                            package.carrier_tracking_ref = request['tracking_number']
                             carrier_tracking_ref = request['tracking_number']
                         else:
                             raise UserError(request['errors_message'])
@@ -173,6 +174,7 @@ class Provider(models.Model):
                     elif sequence > 1 and sequence < package_count:
                         if not request.get('errors_message'):
                             package_labels.append((package_name, srm.get_label()))
+                            package.carrier_tracking_ref = request['tracking_number']
                             carrier_tracking_ref = carrier_tracking_ref + "," + request['tracking_number']
                         else:
                             raise UserError(request['errors_message'])
@@ -184,7 +186,7 @@ class Provider(models.Model):
                             package_labels.append((package_name, srm.get_label()))
 
                             carrier_price = self._get_request_price(request['price'], order, order_currency)
-
+                            package.carrier_tracking_ref = request['tracking_number']
                             carrier_tracking_ref = carrier_tracking_ref + "," + request['tracking_number']
 
                             logmessage = _("Shipment created into Fedex<br/>"
@@ -196,7 +198,7 @@ class Provider(models.Model):
                                 attachments = [('LabelFedex.pdf', pdf.merge_pdf([pl[1] for pl in package_labels]))]
                             picking.message_post(body=logmessage, attachments=attachments)
                             shipping_data = {'exact_price': carrier_price,
-                                             'tracking_number': carrier_tracking_ref}
+                                             'tracking_number': carrier_tracking_ref and carrier_tracking_ref.split(',')[0] or carrier_tracking_ref}
                             res = res + [shipping_data]
                         else:
                             raise UserError(request['errors_message'])
@@ -226,7 +228,7 @@ class Provider(models.Model):
                         package_height=packaging.height,
                         package_width=packaging.width,
                         package_length=packaging.length,
-                        po_number=order.customer_po_number and order.customer_po_number or po_number,
+                        po_number=order.client_order_ref and order.client_order_ref or po_number,
                         dept_number=dept_number,
                         reference=picking.display_name,
                     )
@@ -253,6 +255,7 @@ class Provider(models.Model):
                             amount = request['price']['USD']
                             carrier_price = company_currency._convert(
                                 amount, order_currency, company, order.date_order or fields.Date.today())
+                    picking.package_ids[:1].carrier_tracking_ref = request['tracking_number']
                     carrier_tracking_ref = request['tracking_number']
                     logmessage = (_("Shipment created into Fedex <br/> <b>Tracking Number : </b>%s") % (carrier_tracking_ref))
 
@@ -260,7 +263,7 @@ class Provider(models.Model):
                                     for index, label in enumerate(srm._get_labels(self.fedex_label_file_type))]
                     picking.message_post(body=logmessage, attachments=fedex_labels)
                     shipping_data = {'exact_price': carrier_price,
-                                     'tracking_number': carrier_tracking_ref}
+                                     'tracking_number': carrier_tracking_ref and carrier_tracking_ref.split(',')[0] or carrier_tracking_ref}
                     res = res + [shipping_data]
                 else:
                     raise UserError(request['errors_message'])
@@ -440,12 +443,16 @@ class Provider(models.Model):
                 quote_currency = ResCurrency.search([('name', '=', result['currency_code'])], limit=1)
                 price = quote_currency._convert(
                     float(result['price']), currency_order, company, order.date_order or fields.Date.today())
-
+            
             package_labels = []
             for track_number, label_binary_data in result.get('label_binary_data').items():
                 package_labels = package_labels + [(track_number, label_binary_data)]
-
+            
             carrier_tracking_ref = "+".join([pl[0] for pl in package_labels])
+            #writing tracking reference to respective packages
+            for index, package in enumerate(picking.package_ids):
+                package.carrier_tracking_ref = carrier_tracking_ref.split('+')[index]
+            
             logmessage = _("Shipment created into UPS<br/>"
                            "<b>Tracking Numbers:</b> %s<br/>"
                            "<b>Packages:</b> %s") % (carrier_tracking_ref, ','.join(package_names))
@@ -456,7 +463,7 @@ class Provider(models.Model):
             picking.message_post(body=logmessage, attachments=attachments)
             shipping_data = {
                 'exact_price': price,
-                'tracking_number': carrier_tracking_ref}
+                'tracking_number': carrier_tracking_ref and carrier_tracking_ref.split('+')[0] or carrier_tracking_ref}
             res = res + [shipping_data]
             if self.return_label_on_delivery:
                 self.ups_get_return_label(picking)

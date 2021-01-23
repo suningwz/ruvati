@@ -8,7 +8,7 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
     is_ship_collect = fields.Boolean(string="Ship Collect")
-    carrier_id = fields.Many2one("delivery.carrier", string="Carrier")
+#    carrier_id = fields.Many2one("delivery.carrier", string="Carrier", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     shipper_number = fields.Char(string="Shipper No.")
     
     @api.onchange('partner_id')
@@ -25,7 +25,6 @@ class SaleOrder(models.Model):
     @api.onchange('is_ship_collect')
     def onchange_ship_collect(self):
         if not self.is_ship_collect:
-            self.carrier_id = False
             self.shipper_number = False
         else:
             self.carrier_id = self.partner_id.carrier_id
@@ -34,14 +33,16 @@ class SaleOrder(models.Model):
     @api.model
     def create(self, vals):
         sec_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
+        if vals.get('amazon_channel', False) and vals.get('amazon_channel') == 'fba':
+            return super(SaleOrder, self).create(vals)
         vals.update({'warehouse_id': sec_warehouse and sec_warehouse.id or vals.get('warehouse_id', False)})
         return super(SaleOrder, self).create(vals)
         
-    def write(self, vals):
-        sec_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
-        if self.warehouse_id != sec_warehouse:
-            vals.update({'warehouse_id': sec_warehouse and sec_warehouse.id or self.warehouse_id.id})
-        return super(SaleOrder, self).write(vals)
+#    def write(self, vals):
+#        sec_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
+#        if self.warehouse_id != sec_warehouse:
+#            vals.update({'warehouse_id': sec_warehouse and sec_warehouse.id or self.warehouse_id.id})
+#        return super(SaleOrder, self).write(vals)
 
 SaleOrder()
 

@@ -185,7 +185,7 @@ class UPSRequestRef(UPSRequest):
                         po_number = order.display_name or False
                         reference_number_po = self.factory_ns2.ReferenceNumberType()
                         reference_number_po.Code = 'PO'
-                        reference_number_po.Value = str(order.customer_po_number and order.customer_po_number or po_number)
+                        reference_number_po.Value = str(order.client_order_ref and order.client_order_ref or po_number)
                         package.ReferenceNumber.append(reference_number_po)
             print ('packkkkkkk', package.ReferenceNumber)
             Packages.append(package)

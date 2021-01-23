@@ -44,15 +44,15 @@ class StockPicking(models.Model):
         """ Invokes on click of Create Label button from picking, to create shipping label before validating by assigning the packages.
         """
         for pick in self:
-            if pick.state != 'done':
-                raise ValidationError('Sorry!!! Please validate %s before creating Label' % pick.name)
+#            if pick.state != 'done':
+#                raise ValidationError('Sorry!!! Please validate %s before creating Label' % pick.name)
             if not pick.is_create_label:
                 raise ValidationError('Sorry!!! You cannot create a label for %s' % pick.name)
             if pick.is_create_label and not pick.carrier_id:
                 raise ValidationError('Please configure a Carrier to create a Label for %s' % pick.name)
 #            pick.action_assign()
-#            if not pick.has_packages:
-#                pick.put_in_pack()
+            if not pick.has_packages:
+                pick.put_in_pack()
             if pick.carrier_id:
                 if pick.carrier_id.integration_level == 'rate_and_ship' and pick.picking_type_code != 'incoming':
                     pick.create_label_on_validate = True
@@ -78,21 +78,28 @@ class StockMove(models.Model):
         if origin:
             order = self.env['sale.order'].search([('name', '=', origin)], limit=1)
         if order and order.is_ship_collect:
-            res.update({'carrier_id': order.carrier_id.id,
+            res.update({'carrier_id': order.carrier_id and order.carrier_id.id or False,
                         'shipper_number': order.shipper_number,
                         'is_ship_collect': order.is_ship_collect,
                 })
-#        partner = self.env['res.partner']
-#        partner_id = res.get('partner_id', False)
-#        if partner_id:
-#            partner = self.env['res.partner'].browse(partner_id)
-#        if partner and partner.is_ship_collect:
-#            res.update({'carrier_id': partner.carrier_id.id,
-#                        'shipper_number': partner.shipper_number,
-#                })
-#            if partner.carrier_id.delivery_type == 'ups':
-#                res.update({'ups_carrier_account': partner.shipper_number})
+        elif order and res.get('location_dest_id', 0) == order.warehouse_id.wh_pack_stock_loc_id.id:
+            res['carrier_id'] = order.carrier_id and order.carrier_id.id or res['carrier_id']
         return res
+        
+#    def _get_new_picking_values(self):
+#        vals = super(StockMove, self)._get_new_picking_values()
+#        if vals.get('origin', False):
+#            order = self.env['sale.order'].search([('name', '=', vals.get('origin'))])
+#            if order and vals.get('location_dest_id', 0) == order.warehouse_id.wh_pack_stock_loc_id.id:
+#                vals['carrier_id'] = order.carrier_id and order.carrier_id.id or vals['carrier_id'] 
+#        return vals
     
 StockMove
 
+
+class StockQuantPackage(models.Model):
+    _inherit = 'stock.quant.package'
+    
+    carrier_tracking_ref = fields.Char(string='Tracking Reference', copy=False)
+
+StockQuantPackage()
