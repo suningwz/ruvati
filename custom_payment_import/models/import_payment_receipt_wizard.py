@@ -27,7 +27,7 @@ class ImportPaymentReceiptWizard(models.TransientModel):
     partner_id = fields.Many2one('res.partner', string="Customer")
 
     def create_payment(self, vals):
-        """ General payment vals  creation
+        """ General payment vals creation
 
         :param vals: file data
         :return: list of general payment vals
@@ -44,7 +44,7 @@ class ImportPaymentReceiptWizard(models.TransientModel):
             raise UserError("Choose appropriate payment method!")
         for i_data in vals:
             data = dict(i_data)
-            order = self.env['sale.order'].search([('customer_po_number', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
+            order = self.env['sale.order'].search([('client_order_ref', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
             if order:
                 if len(order.invoice_ids) > 1:
                     invoices = order.invoice_ids.filtered(lambda r: r.name == data['Invoice Number'])
