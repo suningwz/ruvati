@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <report 
+        id="report_mer_auth"
+        string="RMA"
+        model="rma.ret.mer.auth" 
+        report_type="qweb-pdf"
+        file="scs_rma.report_mer_auth_rma" 
+        name="scs_rma.report_mer_auth_rma" 
+    />
+
+</odoo>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+   <!--Form View: RMA Form view-->
+
+   <!--Tree View: RMA Tree view-->
+    <record id="rma_ret_verify_form" model="ir.ui.view">
+        <field name="name">rma.ret.verify.form</field>
+        <field name="model">rma.ret.verify</field>
+        <field name="arch" type="xml">
+            <form string="RMA VERIFICATION">
+                <header>
+                    <button name="action_verify_accept" string="Verify and Accept" type="object" class="oe_highlight" attrs="{'invisible': [('state', '=', 'accepted')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,accepted"/>
+                </header>
+                <sheet string="RMA">
+<!--                    <div class="oe_button_box" name="button_box_rma">-->
+<!--                        -->
+<!--                        <button type="object" name="count_stock_picking" class="oe_stat_button" icon="fa-truck" attrs="{'invisible': [('state', 'in', ('new','verification'))]}">-->
+<!--                           <field name="pick_count" widget="statinfo" string="Stock Pickings"/>-->
+<!--                       </button>-->
+<!--                        <button type="object" name="count_invoice_ids" class="oe_stat_button" icon="fa-pencil-square-o" attrs="{'invisible': [('inv_count', '=', 0)]}">-->
+<!--                           <field name="inv_count" widget="statinfo" string="Invoices"/>-->
+<!--                       </button>-->
+<!--                    </div>-->
+                    
+                    
+<!--                    <div class="oe_title">-->
+<!--                        <h1>-->
+<!--                            <field name="name" readonly="1"/>-->
+<!--                        </h1>-->
+<!--                    </div>-->
+                    
+                    
+                    <group>
+                        <group>
+                            <field name="return_picking" required="0"/>
+                            <field name="customer_po_number"/>
+                            <field name="need_credit_memo"/>
+                            <field name="reason_id"/>
+                        </group>
+                        <group>
+                            <field name="return_product" required="1"/>
+                            <field name="tracking_number"/>
+                            <field name="rma_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+   <!--Tree View: RMA Tree view-->
+    <record id="rma_ret_verify_tree" model="ir.ui.view">
+        <field name="name">rma.ret.verify.tree</field>
+        <field name="model">rma.ret.verify</field>
+        <field name="arch" type="xml">
+            <tree string="RMA Verification">
+                <field name="name"/>
+                <field name="return_date"/>
+                <field name="return_picking"/>
+                <field name="return_product"/>
+                <field name="need_credit_memo"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_rma_verify_return" model="ir.actions.act_window">
+        <field name="name">RMA Verification</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">rma.ret.verify</field>
+<!--        <field name="view_type">form</field>-->
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="rma_ret_verify_tree"/>
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_rma_verify_return" action="action_rma_verify_return" parent="scs_rma.menu_main_rma" name="RMA Verification" sequence="1"/>
+
+</odoo>

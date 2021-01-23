@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_order_form_inherit" model="ir.ui.view">
+            <field name="name">view.order.form.inherit</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='client_order_ref']" position="after">
+                    <field name="is_ship_collect"/>
+                    <field name="carrier_id"/>
+<!--                    attrs="{'invisible': [('is_ship_collect', '=', False)]}"-->
+                    <field name="shipper_number" attrs="{'invisible': [('is_ship_collect', '=', False)]}"/>
+                </xpath>
+            </field>
+        </record>
+        
+        <record id="view_delivery_order_form_inherit" model="ir.ui.view">
+            <field name="name">view.delivery.order.form.inherit</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="delivery.view_order_form_with_carrier"/>
+            <field name="arch" type="xml">
+                <button name="action_open_delivery_wizard" position="replace">
+                    <button string="Add shipping" name="action_open_delivery_wizard" type="object" attrs="{'invisible': ['|', '|', '|', ('is_ship_collect', '=', True), ('is_all_service', '=', True), ('order_line', '=', []), ('delivery_set', '=', True)]}"/>
+                </button>
+            </field>
+        </record>
+
+    </data>
+</odoo>
+

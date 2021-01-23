@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+         <record model="ir.ui.view" id="view_payment_journal_type">
+             <field name="name">view.payment.journal.type</field>
+             <field name="model">account.journal</field>
+             <field name="inherit_id" ref="account.view_account_journal_form"/>
+             <field name="arch" type="xml">
+                 <xpath expr="//page[@name='advanced_settings']" position="inside">
+                     <group>
+                        <group string="Journal Type" >
+                            <field name="is_payment_journal"/>
+                        </group>
+                     </group>
+                 </xpath>
+             </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <record id="view_edi_configuration_form" model="ir.ui.view">
+        <field name="name">edi.configuration.form</field>
+        <field name="model">edi.configuration</field>
+        <field name="arch" type="xml">
+            <form string="EDI Configuration">
+                <group>
+                    <field name="name"/>
+                    <field name="order_url"/>
+                    <field name="order_list_url"/>
+                    <field name="exchange_token_url"/>
+                    <field name="post_url"/>
+                    <field name="uid"/>
+                    <field name="password" password="True"/>
+                    <field name="auth_token" password="True"/>
+                    <field name="client_id" password="True"/>
+                    <field name="mode"/>
+                </group>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="view_edi_configuration_tree" model="ir.ui.view">
+        <field name="name">edi.configuration.tree</field>
+        <field name="model">edi.configuration</field>
+        <field name="arch" type="xml">
+            <tree string="EDI Configuration">
+                <field name="mode"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_edi_configurations" model="ir.actions.act_window">
+        <field name="name">EDI Configurations</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">edi.configuration</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="edi_configuration_menu"
+              name="EDI Configurations"
+              parent="sale.menu_sale_config"
+              action="action_edi_configurations"
+              sequence="12"/>
+
+</odoo>
