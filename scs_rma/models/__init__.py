@@ -5,4 +5,4 @@ from . import stock
 from . import rma
 from . import rma_verify
 from . import account
-from . import sale
+#from . import sale

@@ -8,8 +8,8 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='team_id']" position="after">
-                <field name="customer_po_number"/>
+            <xpath expr="//field[@name='client_order_ref']" position="attributes">
+                <attribute name="string">Customer PO Number</attribute>
             </xpath>
         </field>
     </record>
