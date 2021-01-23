@@ -8,10 +8,11 @@
     'author': 'Confianz Global,Inc.',
     'website': 'http://www.confianzit.com',
 
-    "depends": ['sale','sale_amazon'],
+    "depends": ['sale','sale_amazon', 'edi_module'],
 
     'data': [
-            
+            'views/amazone_account_view.xml',
+            'views/sale_view.xml'
     ],
     'demo_xml': [],
     'installable': True,
