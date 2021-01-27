@@ -10,7 +10,7 @@ class Product(models.Model):
 class EdiCustomer(models.Model):
     _name = 'edi.customer'
 
-    product_id = fields.Many2one('product.product', string="Product")
+    product_id = fields.Many2one('product.template', string="Product")
     partner_id = fields.Many2one('res.partner', string="Customer")
     customer_id = fields.Char("Customer ID")
     sale_approved_price = fields.Float("Price")

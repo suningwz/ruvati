@@ -39,7 +39,7 @@ class AmazonAccount(models.Model):
         self.ensure_one()
         edi_record = self.env['edi.customer'].search([('sku_product_id', '=', product_code),
                                                               ('partner_id', '=', self.partner_id.id)], limit=1)
-        product = edi_record.product_id
+        product = edi_record.product_id.product_variant_id
         if not product and fallback:  # Fallback to the default product
             product = self.env.ref('sale_amazon.%s' % default_xmlid, raise_if_not_found=False)
         if not product and fallback:  # Restore the default product if it was deleted
