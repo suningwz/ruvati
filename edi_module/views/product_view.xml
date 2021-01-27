@@ -3,8 +3,8 @@
 
     <record id="edi_product_form_view" model="ir.ui.view">
         <field name="name">product.product.edi.view</field>
-        <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='general_information']" position="after">
                 <page name="edi_customers" string="EDI Customers">

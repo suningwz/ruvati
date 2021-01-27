@@ -2,7 +2,7 @@ from odoo import models, fields, api
 
 
 class Product(models.Model):
-    _inherit = 'product.product'
+    _inherit = 'product.template'
 
     edi_customer_ids = fields.One2many('edi.customer', 'product_id', string="EDI Customer")
 

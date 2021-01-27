@@ -119,7 +119,7 @@ class SaleOrderLine(models.Model):
     def _onchange_product_id_edi(self):
         for rec in self:
             edi_customer = rec.product_id.edi_customer_ids.filtered(lambda l:l.customer_id == rec.order_id.customer_id)
-            rec.sale_approved_price = edi_customer.sale_approved_price
+            rec.sale_approved_price = edi_customer and edi_customer[0].sale_approved_price
 
     @api.model
     def create(self, vals):

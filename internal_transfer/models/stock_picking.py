@@ -60,7 +60,6 @@ class StockPicking(models.Model):
 #                rec.internal_transfer_id.receipt_picking_id.move_line_ids.write({'in_transit': True})
                 # rec.internal_transfer_id.receipt_picking_id.state = 'in_transit'
             if rec.internal_transfer_id and rec.picking_type_code == 'incoming':
-                print(rec.internal_transfer_id.delivery_picking_id.transfer_done)
                 if not rec.internal_transfer_id.delivery_picking_id.transfer_done:
                     raise UserError(
                         _("Please complete entire Delivery Order corresponding to the Internal transfer - (%s)") %
@@ -70,7 +69,6 @@ class StockPicking(models.Model):
                     while True:
                         backorder = self.env['stock.picking'].search([('backorder_id', '=', parent_id)])
                         if backorder and not backorder.transfer_done:
-                            print('1111111',backorder)
                             raise UserError(
                                 _("Please complete the Back order (Delivery) for the Internal transfer - (%s)") %
                                     rec.internal_transfer_id.name)

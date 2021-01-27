@@ -4,7 +4,6 @@ from collections import defaultdict
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT, float_compare, float_is_zero, float_round
-from pprint import pprint
 
 import logging
 
@@ -101,10 +100,12 @@ class InternalTransferExtension(models.Model):
             dst_location = rec.location_dest_id
             reference = rec.name
             carrier_id = rec.carrier_id
+            source_warehouse = self.env['stock.warehouse'].search([('code', '=', source_location.display_name.split('/')[0])])
+            dest_warehouse = self.env['stock.warehouse'].search([('code', '=', dst_location.display_name.split('/')[0])])
             picking_type_out = self.env['stock.picking.type'].search(
-                [('code', '=', 'outgoing'), ('default_location_src_id', '=', source_location.id)], limit=1)
+                [('code', '=', 'outgoing'), ('warehouse_id', '=', source_warehouse.id)], limit=1)
             picking_type_in = self.env['stock.picking.type'].search(
-                [('code', '=', 'incoming'), ('default_location_dest_id', '=', dst_location.id)], limit=1)
+                [('code', '=', 'incoming'), ('warehouse_id', '=', dest_warehouse.id)], limit=1)
             internal_transit_loc = self.env['stock.location'].search(
                 [('usage', '=', 'internal_transit')], limit=1)
             if not internal_transit_loc:
@@ -302,7 +303,6 @@ class ProcurementGroup(models.Model):
                                     balance_qty -= quant
 
                         if balance_qty > 0:
-                            print ('exceptionnnnnn')
                             rec = self.env['internal.transfer.exception'].sudo().create({
                                 'order_point_id': loc.id,
                                 'product_id': procurement[0].product_id.id,
@@ -325,7 +325,6 @@ class ProcurementGroup(models.Model):
             if balance_qty > 0:
                 if hasattr(self.env['stock.rule'], '_run_%s' % action):
                     try:
-                        print ('run moveeeeeeeeee', action)
                         getattr(self.env['stock.rule'], '_run_%s' % action)(proc_list or procurements)
                     except UserError as e:
                         errors.append(e.name)

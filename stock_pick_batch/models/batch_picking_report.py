@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, models
-from pprint import pprint
 
 class BatchPickingReport(models.AbstractModel):
 
