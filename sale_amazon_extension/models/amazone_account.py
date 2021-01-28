@@ -297,6 +297,9 @@ class AmazonAccount(models.Model):
         is_company = mwsc.get_string_value(
             order_data, ('ShippingAddress', 'AddressType'), 'Residential') == 'Commercial'
         country = self.env['res.country'].search([('code', '=', country_code)], limit=1)
+        if phone and 'ext' in phone:
+            phone_split = phone.split('ext')
+            phone = phone_split and phone_split[0]
         if not phone:
             phone = self.company_id.phone
         state = self.env['res.country.state'].search(

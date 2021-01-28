@@ -9,21 +9,34 @@
             <field name="arch" type="xml">
                 <xpath expr="//header" position="inside">
                     <field name="picking_type_id_code" invisible="1"/>
-                    <button name="generate_shipping_label" type="object" string="Print Shipping label" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
+                    <button name="generate_shipping_label" type="object" string="Print Shipping label"
+                            attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
                 </xpath>
 
             </field>
         </record>
 
-         <record id="view_quant_package_form_extensions" model="ir.ui.view">
+        <record id="view_quant_package_form_extensions" model="ir.ui.view">
             <field name="name">stock.quant.package.extensions</field>
             <field name="model">stock.quant.package</field>
             <field name="inherit_id" ref="stock.view_quant_package_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='company_id']" position="before">
-                    <field name="height"/>
-                    <field name="width"/>
-                    <field name="length"/>
+                    <label for="height"/>
+                    <div class="o_row" name="height">
+                        <field name="height" string="Height"/>
+                        <span>Inches</span>
+                    </div>
+                    <label for="width"/>
+                    <div class="o_row" name="width">
+                        <field name="width" string="Width"/>
+                        <span>Inches</span>
+                    </div>
+                    <label for="length"/>
+                    <div class="o_row" name="length">
+                        <field name="length" string="Length"/>
+                        <span>Inches</span>
+                    </div>
                 </xpath>
 
             </field>

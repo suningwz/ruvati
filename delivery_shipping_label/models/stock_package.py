@@ -4,6 +4,14 @@ from odoo import models, fields
 class StockQuantPackage(models.Model):
     _inherit = "stock.quant.package"
 
-    height = fields.Integer("Height")
-    width = fields.Integer("Width")
-    length = fields.Integer("lengh")
+    height = fields.Float("Height")
+    width = fields.Float("Width")
+    length = fields.Float("lengh")
+
+
+class ProductPackaging(models.Model):
+    _inherit = 'product.packaging'
+
+    height = fields.Float('Height')
+    width = fields.Float('Width')
+    length = fields.Float('Length')
