@@ -33,6 +33,16 @@ class InternalTransferExtension(models.Model):
         'Scheduled Date', default=lambda self: fields.Datetime.now(),
         states={'done': [('readonly', True)]})
 
+    source_warehouse_id = fields.Many2one(
+        'stock.warehouse', "Source Warehouse",
+        required=True,
+        states={'draft': [('readonly', False)]})
+
+    destination_warehouse_id = fields.Many2one(
+        'stock.warehouse', "Destination Warehouse",
+        required=True,
+        states={'draft': [('readonly', False)]})
+
     location_id = fields.Many2one(
         'stock.location', "Source Location",
         required=True,
@@ -50,6 +60,21 @@ class InternalTransferExtension(models.Model):
     delivery_count = fields.Integer("Deliveries", compute='_compute_deliveries_count')
     receipt_count = fields.Integer("Receipts", compute='_compute_receipt_count')
     date_order = fields.Datetime(string='Date', default=fields.Date.today)
+
+    @api.onchange('source_warehouse_id', 'destination_warehouse_id')
+    def _onchange_location_id(self):
+        res = {}
+        if self.source_warehouse_id :
+            res['value'] = {'location_id': self.source_warehouse_id.lot_stock_id.id}
+            loc_ids = self.env['stock.location'].search(
+                [('id', 'child_of', self.source_warehouse_id.lot_stock_id.id)]).ids
+            res['domain'] = {'location_id': [('id', 'in', loc_ids)]}
+        if self.destination_warehouse_id:
+            res['value'] = {'location_dest_id': self.destination_warehouse_id.lot_stock_id.id}
+            loc_ids = self.env['stock.location'].search(
+                [('id', 'child_of', self.destination_warehouse_id.lot_stock_id.id)]).ids
+            res['domain'] = {'location_dest_id': [('id', 'in', loc_ids)]}
+        return res
 
     def _compute_deliveries_count(self):
         for rec in self:
@@ -94,7 +119,6 @@ class InternalTransferExtension(models.Model):
         return action
 
     def action_transfer(self):
-
         for rec in self:
             source_location = rec.location_id
             dst_location = rec.location_dest_id
