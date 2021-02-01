@@ -10,6 +10,8 @@ from odoo.tools import pdf
 from .fedex import FedexRequestShipCollect
 from .ups import UPSRequestRef
 from odoo.addons.delivery_ups.models.ups_request import UPSRequest, Package
+from odoo.addons.delivery_fedex.models.fedex_request import FedexRequest
+
 _logger = logging.getLogger(__name__)
 
 FEDEX_CURR_MATCH = {
@@ -280,11 +282,110 @@ class Provider(models.Model):
                 fedex_documents = [('DocumentFedex.pdf', commercial_invoice)]
                 picking.message_post(body='Fedex Documents', attachments=fedex_documents)
         return res
-        
+
     def fedex_rate_shipment(self, order):
-        res = super(Provider, self).fedex_rate_shipment(order)
+        max_weight = self._fedex_convert_weight(self.fedex_default_packaging_id.max_weight, self.fedex_weight_unit)
+        price = 0.0
+        is_india = order.partner_shipping_id.country_id.code == 'IN' and order.company_id.partner_id.country_id.code == 'IN'
+
+        # Estimate weight of the sales order; will be definitely recomputed on the picking field "weight"
+        est_weight_value = sum([(line.product_id.weight * line.product_uom_qty) for line in order.order_line if
+                                not line.display_type]) or 0.0
+        weight_value = self._fedex_convert_weight(est_weight_value, self.fedex_weight_unit)
+
+        # Some users may want to ship very lightweight items; in order to give them a rating, we round the
+        # converted weight of the shipping to the smallest value accepted by FedEx: 0.01 kg or lb.
+        # (in the case where the weight is actually 0.0 because weights are not set, don't do this)
+        if weight_value > 0.0:
+            weight_value = max(weight_value, 0.01)
+
+        order_currency = order.currency_id
+        superself = self.sudo()
+
+        # Authentication stuff
+        srm = FedexRequest(self.log_xml, request_type="rating", prod_environment=self.prod_environment)
+        srm.web_authentication_detail(superself.fedex_developer_key, superself.fedex_developer_password)
+        srm.client_detail(superself.fedex_account_number, superself.fedex_meter_number)
+
+        # Build basic rating request and set addresses
+        srm.transaction_detail(order.name)
+        srm.shipment_request(
+            self.fedex_droppoff_type,
+            self.fedex_service_type,
+            self.fedex_default_packaging_id.shipper_package_code,
+            self.fedex_weight_unit,
+            self.fedex_saturday_delivery,
+        )
+        pkg = self.fedex_default_packaging_id
+
+        srm.set_currency(_convert_curr_iso_fdx(order_currency.name))
+        srm.set_shipper(order.company_id.partner_id, order.warehouse_id.partner_id)
+        srm.set_recipient(order.partner_shipping_id)
+
+        # if max_weight and weight_value > max_weight:
+        #     total_package = int(weight_value / max_weight)
+        #     last_package_weight = weight_value % max_weight
+        count= 0
+        for line in order.order_line:
+            for sequence in range(1, int(line.product_uom_qty) + 1):
+                count+=1
+                srm.add_package(
+                    line.product_id.weight,
+                    package_code=line.product_id.default_code,
+                    package_height=line.product_id.height,
+                    package_width=line.product_id.width,
+                    package_length=line.product_id.length,
+                    sequence_number=sequence,
+                    mode='rating',
+                )
+
+        srm.set_master_package(weight_value, count)
+        # Commodities for customs declaration (international shipping)
+        if self.fedex_service_type in ['INTERNATIONAL_ECONOMY', 'INTERNATIONAL_PRIORITY'] or is_india:
+            total_commodities_amount = 0.0
+            commodity_country_of_manufacture = order.warehouse_id.partner_id.country_id.code
+
+            for line in order.order_line.filtered(
+                    lambda l: l.product_id.type in ['product', 'consu'] and not l.display_type):
+                commodity_amount = line.price_reduce_taxinc
+                total_commodities_amount += (commodity_amount * line.product_uom_qty)
+                commodity_description = line.product_id.name
+                commodity_number_of_piece = '1'
+                commodity_weight_units = self.fedex_weight_unit
+                commodity_weight_value = self._fedex_convert_weight(line.product_id.weight * line.product_uom_qty,
+                                                                    self.fedex_weight_unit)
+                commodity_quantity = line.product_uom_qty
+                commodity_quantity_units = 'EA'
+                commodity_harmonized_code = line.product_id.hs_code or ''
+                srm.commodities(_convert_curr_iso_fdx(order_currency.name), commodity_amount, commodity_number_of_piece,
+                                commodity_weight_units, commodity_weight_value, commodity_description,
+                                commodity_country_of_manufacture, commodity_quantity, commodity_quantity_units,
+                                commodity_harmonized_code)
+            srm.customs_value(_convert_curr_iso_fdx(order_currency.name), total_commodities_amount, "NON_DOCUMENTS")
+            srm.duties_payment(order.warehouse_id.partner_id, superself.fedex_account_number,
+                               superself.fedex_duty_payment)
+
+        request = srm.rate()
+
+        warnings = request.get('warnings_message')
+        if warnings:
+            _logger.info(warnings)
+
+        if not request.get('errors_message'):
+            price = self._get_request_price(request['price'], order, order_currency)
+        else:
+            return {'success': False,
+                    'price': 0.0,
+                    'error_message': _('Error:\n%s') % request['errors_message'],
+                    'warning_message': False}
+
         if order.is_ship_collect:
-            res.update({'price': 0.0})
+            price = 0
+        return {'success': True,
+                'price': price,
+                'error_message': False,
+                'warning_message': _('Warning:\n%s') % warnings if warnings else False}
+
         return res
 
 

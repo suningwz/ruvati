@@ -72,7 +72,7 @@
                                     <t t-if="package.quant_ids">
                                         <t t-foreach="package.quant_ids" t-as="quant">
                                             <tr>
-                                                <td>
+                                                <td style="font-size:25px;">
                                                     <strong>
                                                         <t t-esc="quant.product_id.default_code"></t>
                                                     </strong>
@@ -102,7 +102,11 @@
                                         </t>
                                     </t>
                                 </tbody>
-
+                                <tfoot>
+                                    <tr>
+                                        <td><strong>Dealer: </strong><t t-esc="doc.partner_id.email"></t> </td>
+                                    </tr>
+                                </tfoot>
 
                             </table>
                             <hr width="100%"
