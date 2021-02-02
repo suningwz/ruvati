@@ -303,14 +303,14 @@ class AmazonAccount(models.Model):
         if not phone:
             phone = self.company_id.phone
         state = self.env['res.country.state'].search(
-            [('country_id', '=', country.id), '|', ('code', '=', state_code),
-             ('name', '=', state_code)], limit=1)
-        if not state:
-            state = self.env['res.country.state'].with_context(tracking_disable=True).create({
-                'country_id': country.id,
-                'name': state_code,
-                'code': state_code
-            })
+            [('country_id', '=', country.id), '|', ('code', '=ilike', state_code),
+             ('name', '=ilike', state_code)], limit=1)
+        # if not state:
+        #     state = self.env['res.country.state'].with_context(tracking_disable=True).create({
+        #         'country_id': country.id,
+        #         'name': state_code,
+        #         'code': state_code
+        #     })
         # If personal information of the customer are not provided because of API restrictions,
         # all concerned fields are left blank as well as the amazon email to avoid matching an
         # anonymized partner with the same customer if personal info are later provided again.
@@ -338,6 +338,7 @@ class AmazonAccount(models.Model):
             contact = self.env['res.partner'].with_context(tracking_disable=True).create({
                 'name': contact_name,
                 'is_company': is_company,
+                'is_amazon_customer': True,
                 **new_partner_vals,
             })
         # The contact partner acts as delivery partner if the address is either anonymous or
@@ -359,6 +360,7 @@ class AmazonAccount(models.Model):
             delivery = self.env['res.partner'].with_context(tracking_disable=True).create({
                 'name': shipping_address_name,
                 'type': 'delivery',
+                'is_amazon_customer': True,
                 'parent_id': contact.id,
                 **new_partner_vals,
             })
