@@ -10,7 +10,7 @@
                 <xpath expr="//sheet/group/group" position="after">
                     <group>
 <!--                        <field name="warehouse_id"/>-->
-                        <field name="picking_type_id"/>
+                        <field name="picking_type_id" options="{'no_create_edit': True}"/>
                     </group>
                 </xpath>
                 <button name="action_cancel" position="attributes">

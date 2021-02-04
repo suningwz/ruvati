@@ -8,14 +8,19 @@ from odoo.exceptions import UserError
 class StockPickingBatch(models.Model):
     _inherit = "stock.picking.batch"
 
-#    warehouse_id = fields.Many2one('stock.warehouse', string="Pick From", required=True)
-    picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True, domain="[('sequence_code', '=', 'PICK')]")
-#    , domain="[('sequence_code', '=', 'PICK')]"
+    #    warehouse_id = fields.Many2one('stock.warehouse', string="Pick From", required=True)
+    picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True, domain="['|','&',('sequence_code','in',('PICK','IN')),('warehouse_id.code','=','WH1'),'&',('sequence_code','=','OUT'),('warehouse_id.code','=','WH2')]")
+
     picking_ids = fields.One2many(
         'stock.picking', 'batch_id', string='Transfers',
         domain="[('company_id', '=', company_id), ('state', 'not in', ('done', 'cancel')), ('picking_type_id', '=', picking_type_id)]",
         help='List of transfers associated to this batch')
     picking_type_id_code = fields.Char('Picking Type Code', related='picking_type_id.sequence_code', readonly=True)
+
+    @api.onchange('picking_type_id')
+    def _onchange_pic_type(self):
+        if self.picking_type_id:
+            self.picking_ids = False
 
     def print_picking(self):
         pickings = self.mapped('picking_ids')
@@ -27,7 +32,8 @@ class StockPickingBatch(models.Model):
         self._check_company()
         pickings = self.mapped('picking_ids').filtered(lambda picking: picking.state not in ('cancel', 'done'))
         if any(picking.state not in ('assigned') for picking in pickings):
-            raise UserError(_('Some transfers are still waiting for goods. Please check or force their availability before setting this batch to done.'))
+            raise UserError(_(
+                'Some transfers are still waiting for goods. Please check or force their availability before setting this batch to done.'))
         for picking in pickings:
             picking.message_post(
                 body="<b>%s:</b> %s <a href=#id=%s&view_type=form&model=stock.picking.batch>%s</a>" % (
@@ -56,7 +62,8 @@ class StockPickingBatch(models.Model):
             else:
                 picking.action_done()
         if picking_without_carrier:
-            raise UserError(_('Please configure a Carrier before validating %s' % ','.join(picking_without_carrier.mapped('name'))))
+            raise UserError(
+                _('Please configure a Carrier before validating %s' % ','.join(picking_without_carrier.mapped('name'))))
         if picking_without_qty_done:
             view = self.env.ref('stock.view_immediate_transfer')
             wiz = self.env['stock.immediate.transfer'].create({

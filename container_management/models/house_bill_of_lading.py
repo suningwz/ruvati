@@ -305,7 +305,6 @@ class MasterHouseBillLading(models.Model):
             if not self._context.get('container_clearance', False):
                 
                 container_ids = self.hbl_line_ids.container_id
-                print ('cccccccccc',self.hbl_line_ids, self.hbl_line_ids.container_id)
                 container_ids.create_container_status_note(msg="Customs cleared for BOL %s" % (rec.name), user_id=self.env.user)
             if self.state in ['customs cleared','received port','received warehouse']:
                 journal_domain = [
@@ -776,7 +775,6 @@ class HouseBillLading(models.Model):
 ##                default_journal_id = self.env['account.journal'].search(journal_domain, limit=1)
 ##                partner_id = self.env['res.partner'].search([('us_customs','=',True)],limit=1)
 ##                if default_journal_id:
-##                    print ('333333333333')
 ##                    c_duty_bill_id = self.env['account.move'].create({'partner_id' : partner_id.id,
 ##                                                                          'type' : 'in_invoice',
 ##                                                                          'mhbl_id' : rec.mhbl_id.id,
@@ -787,7 +785,6 @@ class HouseBillLading(models.Model):
 ##                    rec.prepare_invoice_lines(c_duty_bill_id)
 
 ##                    if rec.mhbl_id.freight_forwarder.id == rec.mhbl_id.customs_agent_id.id:
-##                        print ('4444444444')
 ##                        vendor_bill = self.env['account.move'].create({'partner_id' : rec.mhbl_id.freight_forwarder.id,
 ##                                                                          'bill_type' :'freight_plus_process',
 ##                                                                          'journal_id' : default_journal_id.id,
@@ -798,7 +795,6 @@ class HouseBillLading(models.Model):
 ##                        rec.prepare_invoice_lines(vendor_bill)
 
 ##                    else:
-##                        print ('555555555555')
 ##                        freight_bill = self.env['account.move'].create({ 'partner_id' : rec.mhbl_id.freight_forwarder.id,
 ##                                                                            'bill_type' :'freight charge',
 ##                                                                            'journal_id' : default_journal_id.id,
@@ -807,7 +803,6 @@ class HouseBillLading(models.Model):
 ##                                                                            'ref' : rec.mhbl_id.mbl_no,
 ##                                                                            })
 
-##                        print ('66666666666')
 ##                        customs_bill = self.env['account.move'].create({'partner_id' : rec.mhbl_id.customs_agent_id.id,
 ##                                                                           'bill_type' :'process fee',
 ##                                                                           'journal_id' :default_journal_id.id,
@@ -828,7 +823,6 @@ class HouseBillLading(models.Model):
 #        """
 ##        customs_account_id  = self.env['ir.values'].get_default('container.config', 'customs_clearence_account_id')
 #        customs_account_id = self.env['ir.config_parameter'].get_param('customs_clearence_account_id', '')
-#        print ('aaaaaaaaa', customs_account_id, type(customs_account_id))
 #        mhbl_id = self.mhbl_id
 #        inv_data = []
 #        if bill_id.bill_type == 'duty':
@@ -863,7 +857,6 @@ class HouseBillLading(models.Model):
 #                             }
 
 #            inv_data = [duty_line, merch_fee_line, harbour_m_fee]
-#            print ('1111111111')
 #            for inv_rec in inv_data:
 #                self.env['account.move.line'].create(inv_rec)
 
@@ -952,7 +945,6 @@ class HouseBillLading(models.Model):
 #                               }
 #                inv_data.extend(freight_line.values())
 #                inv_data.append(isf_s_line)
-#            print ('2222222222222', inv_data)
 #            for inv_rec in inv_data:
 #                self.env['account.move.line'].create(inv_rec)
 #        return True

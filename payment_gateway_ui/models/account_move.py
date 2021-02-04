@@ -96,7 +96,6 @@ class AccountMove(models.Model):
         token = self.env['payment.token.invoice'].get_invoice_payment_record(self, 'invoice')
         web_root_url = self.env['ir.config_parameter'].get_param('web.base.url')
         gateway_type = self.env['ir.config_parameter'].sudo().get_param('gateway_type')
-        print('gateway_type', gateway_type)
         EDI_VIEW_WEB_URL = '%s/%s/payment/invoice?token=%s' % (web_root_url, gateway_type, token)
 
         return EDI_VIEW_WEB_URL

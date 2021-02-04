@@ -23,7 +23,7 @@ class BatchPickingReport(models.AbstractModel):
                 'pick_qty': int(move.product_uom_qty),
                 'name': move.picking_id.name,
                 'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in
-                                 move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc],
+                                 move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc][:3],
             })
         for r in [list(data.values()) for data in result.values()]:
             batch_pick_list.extend(r)

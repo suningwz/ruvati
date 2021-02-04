@@ -13,7 +13,6 @@ class account_payment(models.Model):
 
     def cancel(self):
         for payment in self:
-            print('self._context',self._context.get('from_invoice', False))
             from_invoice = self._context.get('from_invoice', False)
             if from_invoice:
                 super(account_payment, payment).cancel()

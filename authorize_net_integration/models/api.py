@@ -237,7 +237,6 @@ class AuthorizenetApi(models.Model):
             """ % (auth_header, cust_id, partner.email)
 
         success, response, header, code = self.execute_request(auth_data, url=url, headers={'Content-Type': 'text/xml'})
-        print('profilecreation', success, response, header, code)
         if not success:
             raise UserError('Authorize.Net Warning - %s\n%s' % self._get_error_message(response))
         profile_id = self._get_profile_id(response)
@@ -595,7 +594,6 @@ class AuthorizenetApi(models.Model):
             @param order : order reference
             return : transaction id
         """
-        print('content', amount, card, cvv, expiry, invoice)
         customer_details = self.env['account.move'].search([('id', '=', int(invoice))])
         id = customer_details and customer_details.id
         first_name = self.check_string(
@@ -674,7 +672,6 @@ class AuthorizenetApi(models.Model):
                 if not e:
                     e = "error"
                 return False, e
-        print('response', response)
         return self._get_transaction_id_aim(response), False
 
     @api.model

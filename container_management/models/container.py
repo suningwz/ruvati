@@ -238,9 +238,7 @@ class ContainerLines(models.Model):
     def action_clear_customs(self):
         self.write({'state' : 'customs cleared'})
         self.container_id.create_container_status_note(msg="Customs cleared for BOL %s" % (self.mbl_id.name), user_id=self.env.user)
-        print ('container 1111')
         if all(state in ['customs cleared','received partial','received warehouse'] for state in self.mbl_id.mapped('hbl_line_ids').mapped('state')):
-            print ('container 22222')
             self.mbl_id.with_context(container_clearance=True).action_clear_customs()
 
 #    @api.multi

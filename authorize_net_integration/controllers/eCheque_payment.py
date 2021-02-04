@@ -13,7 +13,6 @@ class PaymentPageCheque(http.Controller):
             submit the cheque payment form
 
         """
-        print('form', form)
         account_name = form.get('account_name', False)
         routing_number = form.get('routing_number', False)
         account_number = form.get('account_number', False)
@@ -35,7 +34,6 @@ class PaymentPageCheque(http.Controller):
             sale_obj = request.env['sale.order'].sudo().search([('name', '=', order)])
             draft_invoice_ids = sale_obj.invoice_ids.filtered(
                 lambda r: r.state not in ('paid', 'cancel') and r.type == 'out_invoice')
-            print('draft_invoice_ids', draft_invoice_ids)
             inv_draft_amount = 0
             for draft_invoice in draft_invoice_ids:
                 inv_draft_amount += draft_invoice.amount_total
@@ -43,7 +41,6 @@ class PaymentPageCheque(http.Controller):
                 return request.render("authorize_net_integration.PaymentResultView", {'status': 'invoice-created'})
             paid_invoice_ids = sale_obj.invoice_ids.filtered(
                 lambda r: r.state == 'paid' and r.type == 'out_invoice')
-            print('paid_invoice_ids', paid_invoice_ids)
             inv_paid_amount = 0
             for paid_invoice in paid_invoice_ids:
                 inv_paid_amount += paid_invoice.amount_total
@@ -52,7 +49,6 @@ class PaymentPageCheque(http.Controller):
 
             draft_invoice_ids = sale_obj.invoice_ids.filtered(
                 lambda r: r.state not in ('paid', 'cancel') and r.type == 'out_invoice')
-            print('draft_invoice_ids', draft_invoice_ids)
             inv_draft_amount = 0
             for draft_invoice in draft_invoice_ids:
                 inv_draft_amount += draft_invoice.amount_total
@@ -60,7 +56,6 @@ class PaymentPageCheque(http.Controller):
                 return request.render("authorize_net_integration.PaymentResultView", {'status': 'invoice-created'})
             paid_invoice_ids = sale_obj.invoice_ids.filtered(
                 lambda r: r.state == 'paid' and r.type == 'out_invoice')
-            print('paid_invoice_ids', paid_invoice_ids)
             inv_paid_amount = 0
             for paid_invoice in paid_invoice_ids:
                 inv_paid_amount += paid_invoice.amount_total
@@ -70,9 +65,7 @@ class PaymentPageCheque(http.Controller):
             # if sale_obj.invoice_status != 'to invoice':
             #     return request.render("authorize_net_integration.PaymentResultView", {'status': 'invoice-paid'})
             paid_amount = sale_obj.down_payment_amount
-            print('paramsssssssssss', total_amount, handling_fee, invoice_total, paid_amount)
             invoice = sale_obj.sudo().create_down_payment(total_amount, handling_fee, invoice_total, paid_amount)
-            print('invoice', invoice)
             if invoice.state == 'paid':
                 return request.render("authorize_net_integration.PaymentResultView", {'status': 'invoice-paid'})
             invoice.action_post()

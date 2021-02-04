@@ -38,7 +38,6 @@ class AccountMove(models.Model):
                 routing_number=routing_number,
                 account_number=account_number, bank_name=bank_name,
                 eCheque_type=eCheque_type, account_type=account_type)
-            print('transaction_id_aimtransaction_id_aimtransaction_id_aim', transaction_id_aim, error)
         else:
             transaction_id_aim, error = self.env['authorizenet.api'].authorize_capture_transaction_aim(amount,
                                                                                                        str(card),
@@ -55,8 +54,6 @@ class AccountMove(models.Model):
         invoices = []
         for inv in invoice_list:
             invoice = self.browse(inv)
-            print('invoice', invoice)
-            print('transaction_id', transaction_id_aim)
             invoice.write({'transaction_id': transaction_id_aim, 'transaction_date': fields.Datetime.now()})
             invoices.append(invoice.id)
             if invoice.type == 'out_refund' and invoice.transaction_id:
@@ -69,8 +66,6 @@ class AccountMove(models.Model):
             payment_type = invoice_id and invoice_id.type in ('out_invoice', 'in_refund') and 'inbound' or 'outbound'
             payment_methods = payment_type == 'inbound' and Journal.inbound_payment_method_ids or Journal.outbound_payment_method_ids
             payment_method_id = payment_methods and payment_methods[0] or False
-            print('payment_method_id', payment_method_id)
-            print('Journal', Journal)
             register_payments = self.env['account.payment.register'].with_context({
                 'active_model': 'account.move',
                 'active_ids': invoices,
@@ -111,12 +106,10 @@ class AccountMove(models.Model):
                 move_lines = self.env['account.move.line'].search([('payment_id', 'in', payment.ids)])
                 if move_lines:
                     move_lines[0].move_id.message = message
-            print('card', card)
             # if card:
             #     default_account = self.env['ir.property'].get('property_account_receivable_id', 'res.partner')
             #     move_vals = payment._get_move_vals()
             #     # move_vals['type'] = 'entry'
-            #     print('move_valsold---------', move_vals)
             #     move_vals.update({'line_ids': [[0, 0, {
             #         'partner_id': payment.payment_type in ('inbound', 'outbound') and self.env[
             #             'res.partner']._find_accounting_partner(payment.partner_id).id or False,
@@ -134,7 +127,6 @@ class AccountMove(models.Model):
             #         'currency_id': payment.journal_id.currency_id.id,
             #         'journal_id': payment.journal_id.id
             #     }]]})
-            #     print('move_valsnewwwwww', move_vals)
             #     move = self.env['account.move'].create(move_vals)
             #     # move.post()
             #     (move.line_ids.filtered(lambda r: not r.reconciled and r.account_id.internal_type in (
@@ -187,7 +179,6 @@ class AccountMove(models.Model):
                                         FROM account_invoice_payment_rel WHERE invoice_id=%s'''
             self.env.cr.execute(query, (invoice.id,))
             payment = self.env.cr.fetchall()
-            print('payment', payment)
 
             if invoice.payment_id and not invoice.is_refund:
                 for each in payment:
@@ -195,7 +186,6 @@ class AccountMove(models.Model):
                     response, msg, code = self.env['authorizenet.api'].void_payment(
                         invoice.commercial_partner_id.profile_id,
                         each.payment_id, each.transaction_id)
-                    print('paymentresponse', response)
                     if not response:
                         raise UserError(
                             _(
@@ -204,7 +194,6 @@ class AccountMove(models.Model):
                 for each in payment:
                     each = self.env['account.payment'].browse(each)
                     response, msg, code = self.env['authorizenet.api'].void_transaction_aim(each.transaction_id)
-                    print('transactionresponse', response)
                     if not response:
                         raise UserError(
                             _(
@@ -229,28 +218,21 @@ class AccountMove(models.Model):
         @return: super
         """
         for invoice in self:
-            print('invoice.type', invoice.type)
             if invoice.type == 'out_refund':
                 return super(AccountMove, self).button_cancel()
             query = '''SELECT payment_id 
                                         FROM account_invoice_payment_rel WHERE invoice_id=%s'''
             self.env.cr.execute(query, (invoice.id,))
             payment = self.env.cr.fetchall()
-            print('payment', payment)
             Journal = self.env['account.journal'].search([('is_authorizenet', '=', True)], limit=1)
             for each in payment:
                 # each = self.env['account.payment'].browse(each)
                 each = self.env['account.payment'].search([('move_reconciled', '=', True), ('id', 'in', each)])
                 if each.payment_id and not invoice.is_refund:
-                    print('each', each)
-                    print('each.transaction_id', each.transaction_id)
-                    print('each.payment_id', each.payment_id)
-                    print('each.state', each.state)
                     if each.state == 'posted' and each.journal_id == Journal:
                         response, msg, code = self.env['authorizenet.api'].void_payment(
                             invoice.commercial_partner_id.profile_id,
                             each.payment_id, each.transaction_id)
-                        print('paymentresponse', response)
                         if not response:
                             raise UserError(
                                 _(
@@ -258,7 +240,6 @@ class AccountMove(models.Model):
                 elif each.transaction_id and not invoice.is_refund:
                     if each.state == 'posted' and each.journal_id == Journal:
                         response, msg, code = self.env['authorizenet.api'].void_transaction_aim(each.transaction_id)
-                        print('transactionresponse', response)
                         if not response:
                             raise UserError(
                                 _(

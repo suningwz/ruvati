@@ -73,7 +73,6 @@ class SelectContainerWizard(models.TransientModel):
 #                                   'container_ids' :  [(6, _, container_ids)],
 ##                                   'purchase_line_id': line.purchase_line.id,
 #                                    }})
-#        print ('move linesssssssss', move_lines)
 #        for m_line in move_lines.values():
 #            new_move = self.env['stock.move'].create(m_line)
 #            new_move._action_confirm()
@@ -88,8 +87,6 @@ class SelectContainerWizard(models.TransientModel):
 #        return True
 
     def transfer_container_to_wh(self):
-        print ('self._contextttt', self._context.get('direct_transfer', False))
-#        print (hi)
         move_lines = {}
         warehouse = self.destination_loc_id and self.destination_loc_id.display_name.split('/')[0] or 'WH1'
         picking_type_id = self.env['stock.picking.type'].search([('code','=','incoming'),('warehouse_id.code','=',warehouse)], limit=1)

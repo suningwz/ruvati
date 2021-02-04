@@ -326,7 +326,7 @@ class Provider(models.Model):
         #     total_package = int(weight_value / max_weight)
         #     last_package_weight = weight_value % max_weight
         count= 0
-        for line in order.order_line:
+        for line in order.order_line.filtered(lambda line: not line.is_delivery and not line.display_type):
             for sequence in range(1, int(line.product_uom_qty) + 1):
                 count+=1
                 srm.add_package(
@@ -380,7 +380,7 @@ class Provider(models.Model):
                     'warning_message': False}
 
         if order.is_ship_collect:
-            price = 0
+            price = 0.0
         return {'success': True,
                 'price': price,
                 'error_message': False,
@@ -404,10 +404,8 @@ class Provider(models.Model):
 #        srm.set_recipient(picking.company_id.partner_id)
 
 #        if picking.partner_id.is_ship_collect:
-#            print ('ship collecttttttt')
 #            srm.shipping_charges_payment_ship_collect(picking.shipper_number)
 #        else:
-#            print ('no ship collect')
 #            srm.shipping_charges_payment(superself.fedex_account_number)
 
 #        srm.shipment_label('COMMON2D', self.fedex_label_file_type, self.fedex_label_stock_type, 'TOP_EDGE_OF_TEXT_FIRST', 'SHIPPING_LABEL_FIRST')
@@ -570,11 +568,88 @@ class Provider(models.Model):
                 self.ups_get_return_label(picking)
         return res
         
+#    def ups_rate_shipment(self, order):
+#        res = super(Provider, self).ups_rate_shipment(order)
+#        if order.is_ship_collect:
+#            res.update({'price': 0.0})
+#        return res
+
     def ups_rate_shipment(self, order):
-        res = super(Provider, self).ups_rate_shipment(order)
+        superself = self.sudo()
+        srm = UPSRequest(self.log_xml, superself.ups_username, superself.ups_passwd, superself.ups_shipper_number, superself.ups_access_number, self.prod_environment)
+        ResCurrency = self.env['res.currency']
+        max_weight = self.ups_default_packaging_id.max_weight
+        packages = []
+        total_qty = 0
+        total_weight = 0
+        for line in order.order_line.filtered(lambda line: not line.is_delivery and not line.display_type):
+            total_qty += line.product_uom_qty
+            total_weight += line.product_id.weight * line.product_qty
+
+#        if max_weight and total_weight > max_weight:
+#            total_package = int(total_weight / max_weight)
+#            last_package_weight = total_weight % max_weight
+
+#            for seq in range(total_package):
+#                packages.append(Package(self, max_weight, quant_pack=package.packaging_id))
+#            if last_package_weight:
+#                packages.append(Package(self, last_package_weight))
+#        else:
+#            packages.append(Package(self, total_weight))
+        count= 0
+        for line in order.order_line.filtered(lambda line: not line.is_delivery and not line.display_type):
+            for sequence in range(1, int(line.product_uom_qty) + 1):
+                count+=1
+                pack = Package(self, line.product_id.weight)
+                pack.dimension.update({'length': line.product_id.length, 'width': line.product_id.width, 'height': line.product_id.height})
+                packages.append(pack)
+        shipment_info = {
+            'total_qty': total_qty  # required when service type = 'UPS Worldwide Express Freight'
+        }
+
+        if self.ups_cod:
+            cod_info = {
+                'currency': order.partner_id.country_id.currency_id.name,
+                'monetary_value': order.amount_total,
+                'funds_code': self.ups_cod_funds_code,
+            }
+        else:
+            cod_info = None
+
+        check_value = srm.check_required_value(order.company_id.partner_id, order.warehouse_id.partner_id, order.partner_shipping_id, order=order)
+        if check_value:
+            return {'success': False,
+                    'price': 0.0,
+                    'error_message': check_value,
+                    'warning_message': False}
+        ups_service_type = order.ups_service_type or self.ups_default_service_type
+        result = srm.get_shipping_price(
+            shipment_info=shipment_info, packages=packages, shipper=order.company_id.partner_id, ship_from=order.warehouse_id.partner_id,
+            ship_to=order.partner_shipping_id, packaging_type=self.ups_default_packaging_id.shipper_package_code, service_type=ups_service_type,
+            saturday_delivery=self.ups_saturday_delivery, cod_info=cod_info)
+        if result.get('error_message'):
+            return {'success': False,
+                    'price': 0.0,
+                    'error_message': _('Error:\n%s') % result['error_message'],
+                    'warning_message': False}
+
+        if order.currency_id.name == result['currency_code']:
+            price = float(result['price'])
+        else:
+            quote_currency = ResCurrency.search([('name', '=', result['currency_code'])], limit=1)
+            price = quote_currency._convert(
+                float(result['price']), order.currency_id, order.company_id, order.date_order or fields.Date.today())
+
+        if self.ups_bill_my_account and order.ups_carrier_account:
+            # Don't show delivery amount, if ups bill my account option is true
+            price = 0.0
+        
         if order.is_ship_collect:
-            res.update({'price': 0.0})
-        return res
+            price = 0.0
+        return {'success': True,
+                'price': price,
+                'error_message': False,
+                'warning_message': False}
 
 Provider()
 
