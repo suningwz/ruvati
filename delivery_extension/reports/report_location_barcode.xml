@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="paperformat_location_barcode" model="report.paperformat">
+            <field name="name">Location Barcode Paper Format</field>
+            <field name="default" eval="True"/>
+            <field name="format">custom</field>
+            <field name="page_height">102</field>
+            <field name="page_width">153</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">1</field>
+            <field name="margin_bottom">1</field>
+            <field name="margin_left">1</field>
+            <field name="margin_right">1</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">0</field>
+            <field name="dpi">80</field>
+        </record>
+
+        <report
+                string="Location Barcode"
+                id="stock.action_report_location_barcode"
+                model="stock.location"
+                report_type="qweb-pdf"
+                name="stock.report_location_barcode"
+                file="stock.report_location_barcode"
+                paperformat="delivery_extension.paperformat_location_barcode"
+                print_report_name="'Location - %s' % object.name"
+        />
+        <template id="stock.report_location_barcode">
+            <t t-call="web.html_container">
+                <div style="width:100%" t-foreach="[[docs[x:x+2], docs[x+2:x+4]] for x in range(0, len(docs), 4)]"
+                     t-as="page_docs" class="page article page_stock_location_barcodes">
+                    <table style="width:100%">
+                        <t t-foreach="page_docs" t-as="page_row">
+                            <tr>
+                                <t t-foreach="page_row" t-as="o">
+                                    <t t-if="o.barcode">
+                                        <t t-set="content" t-value="o.barcode"/>
+                                    </t>
+                                    <t t-if="not o.barcode">
+                                        <t t-set="content" t-value="o.name"/>
+                                    </t>
+                                    <td>
+                                        <img class="barcode" style="width:100%"
+                                             t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;humanreadable=1' % ('Code128', content, 576, 384)"
+                                             alt="Barcode"/>
+                                    </td>
+                                </t>
+                            </tr>
+                        </t>
+                    </table>
+                </div>
+            </t>
+        </template>
+
+
+        <!--        <template id="report_location_barcode_extension" inherit_id="stock.report_location_barcode">-->
+        <!--            <xpath expr="//img" position="replace">-->
+        <!--                <img class="barcode" t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;humanreadable=1' % ('Code128', content, 576, 384)"-->
+        <!--                      alt="Barcode"/>-->
+
+        <!--            </xpath>-->
+        <!--        </template>-->
+
+    </data>
+</odoo>
