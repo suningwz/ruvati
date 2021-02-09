@@ -70,6 +70,15 @@ class StockPicking(models.Model):
                     rec.button_validate()
         return True
 
+    def get_all_picking_products(self):
+        """Returns all products of current picking.
+        """
+        res = []
+        for rec in self:
+            for product in rec.move_lines.mapped('product_id'):
+                res.append(product.id)
+        return res
+
 StockPicking()
 
 
