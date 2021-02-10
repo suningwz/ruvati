@@ -29,7 +29,11 @@ class RMARetVerify(models.Model):
 #        self.write({'name': sequence_val})
         picking = self.env['stock.picking']
         if self.return_picking:
-            picking = self.env['stock.picking'].search([('name', '=', self.return_picking)])
+            picking = self.env['stock.picking'].search([('name', 'ilike', self.return_picking)])
+            if not picking:
+                sale_order = self.env['sale.order'].search([('name', 'ilike', self.return_picking)])
+                if sale_order:
+                    picking = self.env['stock.picking'].search([('origin', '=', sale_order.name), ('picking_type_id', '=', sale_order.warehouse_id.pack_type_id.id)], limit=1)
         elif self.customer_po_number:
             sale_order = self.env['sale.order'].search([('client_order_ref', '=', self.customer_po_number)], limit=1)
             if sale_order:

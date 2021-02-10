@@ -3,11 +3,13 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from datetime import date
 
 
 class StockPickingBatch(models.Model):
     _inherit = "stock.picking.batch"
 
+    reference = fields.Char(string="Reference")
     #    warehouse_id = fields.Many2one('stock.warehouse', string="Pick From", required=True)
     picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True, domain="['|','&',('sequence_code','in',('PICK','IN')),('warehouse_id.code','=','WH1'),'&',('sequence_code','=','OUT'),('warehouse_id.code','=','WH2')]")
 
@@ -16,6 +18,22 @@ class StockPickingBatch(models.Model):
         domain="[('company_id', '=', company_id), ('state', 'not in', ('done', 'cancel')), ('picking_type_id', '=', picking_type_id)]",
         help='List of transfers associated to this batch')
     picking_type_id_code = fields.Char('Picking Type Code', related='picking_type_id.sequence_code', readonly=True)
+
+    @api.model
+    def create(self, vals):
+        res = super(StockPickingBatch, self).create(vals)
+        if not self.reference:
+            res.reference = '%s/%s/%s' % (res.picking_type_id.warehouse_id.code, date.today(), res.name.split('/')[1])
+        return res
+
+    def name_get (self):
+        res = []
+        for rec in self:
+            if rec.reference:
+                name = rec.reference
+                res.append((rec.id, name))
+                return res
+        return super(StockPickingBatch, self).name_get()
 
     @api.onchange('picking_type_id')
     def _onchange_pic_type(self):

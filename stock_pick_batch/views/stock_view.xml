@@ -13,6 +13,9 @@
                         <field name="picking_type_id" options="{'no_create_edit': True}"/>
                     </group>
                 </xpath>
+                <field name="user_id" position="before">
+                    <field name="reference" readonly="1"/>
+                </field>
                 <button name="action_cancel" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </button>
