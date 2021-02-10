@@ -26,31 +26,31 @@ class StockPicking(models.Model):
                     rec.put_in_pack()
         return res
 
-    def put_in_pack(self):
-        self.ensure_one()
-        if self.state not in ('done', 'cancel'):
-            picking_move_lines = self.move_line_ids
-            if (
-                not self.picking_type_id.show_reserved
-                and not self.env.context.get('barcode_view')
-            ):
-                picking_move_lines = self.move_line_nosuggest_ids
-
-            move_line_ids = picking_move_lines.filtered(lambda ml:
-                float_compare(ml.qty_done, 0.0, precision_rounding=ml.product_uom_id.rounding) > 0
-                and not ml.result_package_id
-            )
-            if not move_line_ids:
-                move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
-                                     precision_rounding=ml.product_uom_id.rounding) > 0 and float_compare(ml.qty_done, 0.0,
-                                     precision_rounding=ml.product_uom_id.rounding) == 0)
-            if move_line_ids:
-                res = self._pre_put_in_pack_hook(move_line_ids)
-
-                res = self._put_in_pack(move_line_ids)
-                return res
-            else:
-                raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
+    # def put_in_pack(self):
+    #     self.ensure_one()
+    #     if self.state not in ('done', 'cancel'):
+    #         picking_move_lines = self.move_line_ids
+    #         if (
+    #             not self.picking_type_id.show_reserved
+    #             and not self.env.context.get('barcode_view')
+    #         ):
+    #             picking_move_lines = self.move_line_nosuggest_ids
+    #
+    #         move_line_ids = picking_move_lines.filtered(lambda ml:
+    #             float_compare(ml.qty_done, 0.0, precision_rounding=ml.product_uom_id.rounding) > 0
+    #             and not ml.result_package_id
+    #         )
+    #         if not move_line_ids:
+    #             move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
+    #                                  precision_rounding=ml.product_uom_id.rounding) > 0 and float_compare(ml.qty_done, 0.0,
+    #                                  precision_rounding=ml.product_uom_id.rounding) == 0)
+    #         if move_line_ids:
+    #             res = self._pre_put_in_pack_hook(move_line_ids)
+    #
+    #             res = self._put_in_pack(move_line_ids)
+    #             return res
+    #         else:
+    #             raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
 
     def put_in_pack(self):
         self.ensure_one()
@@ -142,8 +142,9 @@ class StockPicking(models.Model):
                     new_pack_line.write({
                         'result_package_id': package.id,
                     })
-                if pack_line.product_uom_qty > 1:
+                if pack_line.product_uom_qty >= 1:
                     pack_line.write({'product_uom_qty': 1, 'qty_done': 0})
+
         return package
 
     def generate_shipping_label(self):
@@ -210,7 +211,8 @@ class StockPicking(models.Model):
         if self.picking_type_id.warehouse_id.delivery_steps == 'pick_pack_ship' and qc_picking and qc_picking.origin == self.origin and qc_picking.picking_type_id == self.picking_type_id.warehouse_id.pack_type_id:
             return qc_picking.name
         return self.name
-        
+
+
 class StockPickingBatch(models.Model):
     _inherit = 'stock.picking.batch'
         
