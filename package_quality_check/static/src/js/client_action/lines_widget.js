@@ -11,17 +11,14 @@ var HeaderWidget = require('stock_barcode.HeaderWidget');
 var LinesWidget = require('stock_barcode.LinesWidget');
 var SettingsWidget = require('stock_barcode.SettingsWidget');
 
-
 //var core = require('web.core');
 //var PickingQualityCheckClientAction = require('stock_barcode.picking_client_action');
 
 var _t = core._t;
-var Session = require('web.session'); 
+var Session = require('web.session');
 
+LinesWidget.include({
 
-
-var PickingQualityCheckLinesWidget = LinesWidget.include({
-    
     /**
      * Highlight and scroll to a specific line in the current page after removing the highlight on
      * the other lines.
@@ -53,16 +50,15 @@ var PickingQualityCheckLinesWidget = LinesWidget.include({
         }
 
         // Scroll to `$line`.
-        if ($line.length){
+        if ($line.length && $line.position()){
             $body.animate({
                 scrollTop: $body.scrollTop() + $line.position().top - $body.height()/2 + $line.height()/2
             }, 500);
         }
-        
+
     },
-    
-    
+
+
 });
-return PickingQualityCheckLinesWidget;
 
 });

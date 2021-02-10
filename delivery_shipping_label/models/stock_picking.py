@@ -18,6 +18,14 @@ class StockPicking(models.Model):
                     rec.put_in_pack()
         return super(StockPicking, self).action_done()
 
+    def action_assign(self):
+        res = super(StockPicking, self).action_assign()
+        for rec in self:
+            if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
+                if not rec.has_packages:
+                    rec.put_in_pack()
+        return res
+
     def put_in_pack(self):
         self.ensure_one()
         if self.state not in ('done', 'cancel'):
@@ -105,7 +113,7 @@ class StockPicking(models.Model):
                     if pack_line.product_uom_qty > 1 and pack_line_count != pack_line.product_uom_qty:
                         pack_line_count += 1
                         new_pack_line = pack_line.copy(
-                            default={'product_uom_qty': 0, 'qty_done': 1})
+                            default={'product_uom_qty': 0, 'qty_done': 0})
                         # pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
                         new_pack_line.write({'product_uom_qty': 1})
 
@@ -135,7 +143,7 @@ class StockPicking(models.Model):
                         'result_package_id': package.id,
                     })
                 if pack_line.product_uom_qty > 1:
-                    pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
+                    pack_line.write({'product_uom_qty': 1, 'qty_done': 0})
         return package
 
     def generate_shipping_label(self):

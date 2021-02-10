@@ -43,7 +43,182 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
      *     highlighting a new one
      * @return {object} object wrapping the incremented line and some other informations
      */
+
+     _process_pick_operation : function(params){
+
+        var product = params.product;
+        var lotId = params.lot_id;
+        var lotName = params.lot_name;
+        var packageId = params.package_id;
+        var currentPage = this.pages[0];
+        var currentPageData = this.pages[this.currentPageIndex];
+
+        var res = false;
+        var loop_time = currentPage.lines.length;
+        for (var z = 0; z < loop_time; z++) {
+            var lineInCurrentPage = currentPage.lines[z];
+            if (lineInCurrentPage.qty_done===1){
+            continue;
+            }
+            if (lineInCurrentPage.product_id.id === product.id) {
+                // If the line is empty, we could re-use it.
+                if (
+                    (this.actionParams.model === 'stock.picking' &&
+                     ! lineInCurrentPage.lot_id &&
+                     ! lineInCurrentPage.lot_name &&
+                     ! lineInCurrentPage.package_id
+                    ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     ! lineInCurrentPage.product_qty &&
+                     ! lineInCurrentPage.prod_lot_id
+                    )
+                ) {
+                    res = lineInCurrentPage;
+//                    res['is_updated'] = 1;
+                    if(this.currentPageIndex > 0){
+                        currentPage.lines.splice(z,1);
+                        res.location_id = {'id':currentPageData.location_id,'display_name':currentPageData.location_name};
+                        currentPageData.lines.push(res);
+                    }
+                    break;
+
+                }
+
+                if (product.tracking === 'serial' &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                      lineInCurrentPage.qty_done > 0
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.product_qty > 0
+                    ))) {
+                    continue;
+                }
+                if (lineInCurrentPage.qty_done &&
+                (this.actionParams.model === 'stock.inventory' ||
+                lineInCurrentPage.location_dest_id.id === currentPage.location_dest_id) &&
+                this.scannedLines.indexOf(lineInCurrentPage.virtual_id || lineInCurrentPage.id) === -1 &&
+                lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                if (lotId &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                     lineInCurrentPage.lot_id &&
+                     lineInCurrentPage.lot_id[0] !== lotId
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.prod_lot_id &&
+                     lineInCurrentPage.prod_lot_id[0] !== lotId
+                    )
+                )) {
+                    continue;
+                }
+                if (lotName &&
+                    lineInCurrentPage.lot_name &&
+                    lineInCurrentPage.lot_name !== lotName
+                    ) {
+                    continue;
+                }
+                if (packageId &&
+                    (! lineInCurrentPage.package_id ||
+                    lineInCurrentPage.package_id[0] !== packageId[0])
+                    ) {
+                    continue;
+                }
+                if(lineInCurrentPage.product_uom_qty && lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                res = lineInCurrentPage;
+                break;
+            }
+        }
+        return res;
+     },
+
+     _findCandidateLineToIncrement: function (params) {
+         var picking_type_code = this.currentState.picking_type_code;
+        if (this.actionParams.model === 'stock.picking' && picking_type_code ==='internal'){
+            return this._process_pick_operation(params);
+        }
+        var product = params.product;
+        var lotId = params.lot_id;
+        var lotName = params.lot_name;
+        var packageId = params.package_id;
+        var currentPage = this.pages[this.currentPageIndex];
+        var res = false;
+
+        for (var z = 0; z < currentPage.lines.length; z++) {
+            var lineInCurrentPage = currentPage.lines[z];
+            if (lineInCurrentPage.product_id.id === product.id) {
+                // If the line is empty, we could re-use it.
+                if (lineInCurrentPage.virtual_id &&
+                    (this.actionParams.model === 'stock.picking' &&
+                     ! lineInCurrentPage.qty_done &&
+                     ! lineInCurrentPage.product_uom_qty &&
+                     ! lineInCurrentPage.lot_id &&
+                     ! lineInCurrentPage.lot_name &&
+                     ! lineInCurrentPage.package_id
+                    ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     ! lineInCurrentPage.product_qty &&
+                     ! lineInCurrentPage.prod_lot_id
+                    )
+                ) {
+                    res = lineInCurrentPage;
+                    break;
+                }
+
+                if (product.tracking === 'serial' &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                      lineInCurrentPage.qty_done > 0
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.product_qty > 0
+                    ))) {
+                    continue;
+                }
+                if (lineInCurrentPage.qty_done &&
+                (this.actionParams.model === 'stock.inventory' ||
+                lineInCurrentPage.location_dest_id.id === currentPage.location_dest_id) &&
+                this.scannedLines.indexOf(lineInCurrentPage.virtual_id || lineInCurrentPage.id) === -1 &&
+                lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                if (lotId &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                     lineInCurrentPage.lot_id &&
+                     lineInCurrentPage.lot_id[0] !== lotId
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.prod_lot_id &&
+                     lineInCurrentPage.prod_lot_id[0] !== lotId
+                    )
+                )) {
+                    continue;
+                }
+                if (lotName &&
+                    lineInCurrentPage.lot_name &&
+                    lineInCurrentPage.lot_name !== lotName
+                    ) {
+                    continue;
+                }
+                if (packageId &&
+                    (! lineInCurrentPage.package_id ||
+                    lineInCurrentPage.package_id[0] !== packageId[0])
+                    ) {
+                    continue;
+                }
+                if(lineInCurrentPage.product_uom_qty && lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                res = lineInCurrentPage;
+                break;
+            }
+        }
+        return res;
+    },
+
     _incrementLines: function (params) {
+        var picking_type_code = this.currentState.picking_type_code;
         var line = this._findCandidateLineToIncrement(params);
         var isNewLine = false;
         if (line) {
@@ -53,7 +228,13 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 params.lot_name
                 ) {
                 if (this.actionParams.model === 'stock.picking') {
+                    if (picking_type_code === 'internal'){
+                    line.qty_done = params.product.qty || 1;
+                    }
+                    else{
                     line.qty_done += params.product.qty || 1;
+                    }
+
                 } else if (this.actionParams.model === 'stock.inventory') {
                     line.product_qty += params.product.qty || 1;
                 }
@@ -65,6 +246,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                     return {'discard': true,};
                 }
             }
+       if (this.actionParams.model === 'stock.picking' && picking_type_code !=='internal'){
             isNewLine = true;
             // Create a line with the processed quantity.
             if (params.product.tracking === 'none' ||
@@ -77,6 +259,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             }
             this._getLines(this.currentState).push(line);
             this.pages[this.currentPageIndex].lines.push(line);
+            }
         }
         if (this.actionParams.model === 'stock.picking') {
             if (params.lot_id) {
