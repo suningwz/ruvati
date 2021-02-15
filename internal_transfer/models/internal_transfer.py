@@ -199,6 +199,11 @@ class InternalTransferExtension(models.Model):
         res = super(InternalTransferExtension, self).create(vals)
         return res
 
+    def unlink(self):
+        for rec in self:
+            if rec.state != 'draft':
+                raise UserError("You can only delete a Draft transfer.")
+            return super(InternalTransferExtension, rec).unlink()
 
 InternalTransferExtension()
 
