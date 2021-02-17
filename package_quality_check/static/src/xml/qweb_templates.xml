@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-extend="stock_barcode_lines_widget">
+        <t t-jquery="span.o_scan_message_inv_already_done" t-operation="after">
+            <span class="o_hidden o_scan_message o_scan_message_qc_already_done"><span class="fa fa-exclamation-triangle"/>This order is already QC passed</span>
+            <span class="o_hidden o_scan_message o_scan_message_qc_already_cancelled"><span class="fa fa-exclamation-triangle"/>This QC is already cancelled</span>
+        </t>
+    </t>
+</templates>

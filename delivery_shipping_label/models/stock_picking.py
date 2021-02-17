@@ -23,7 +23,7 @@ class StockPicking(models.Model):
         for rec in self:
             if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
                 if not rec.has_packages:
-                    rec.put_in_pack()
+                    rec.with_context({'assign': True}).put_in_pack()
         return res
 
     # def put_in_pack(self):
@@ -78,6 +78,8 @@ class StockPicking(models.Model):
                 res = self._put_in_pack(move_line_ids)
                 return res
             else:
+                if self._context.get('assign',False):
+                    return {}
                 raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
 
     def _put_in_pack(self, move_line_ids):

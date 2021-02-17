@@ -72,12 +72,12 @@
                                     <t t-if="package.quant_ids">
                                         <t t-foreach="package.quant_ids" t-as="quant">
                                             <tr>
-                                                <td style="font-size:30px;">
+                                                <td style="font-size:45px;">
                                                     <strong>
                                                         <t t-esc="quant.product_id.default_code"></t>
                                                     </strong>
                                                 </td>
-                                                <td>
+                                                <td style="font-size:45px;">
                                                     <strong>
                                                         <t t-esc="'%.0f'%(quant.quantity)"></t>
                                                     </strong>
@@ -88,14 +88,14 @@
                                     <t t-if="not package.quant_ids">
                                         <t t-foreach="doc.move_line_ids" t-as="line">
                                             <tr t-if="line.result_package_id == package">
-                                                <td style="font-size:30px;">
+                                                <td style="font-size:45px;">
                                                     <strong>
                                                         <t t-esc="line.product_id.default_code"></t>
                                                     </strong>
                                                 </td>
-                                                <td>
+                                                <td style="font-size:45px;">
                                                     <strong>
-                                                        <t t-esc="line.qty_done"></t>
+                                                        <t t-esc="'%.0f'%(line.product_uom_qty)"></t>
                                                     </strong>
                                                 </td>
                                             </tr>
@@ -104,8 +104,9 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td><strong>Dealer: </strong><t t-esc="doc.partner_id.email"></t> </td>
-                                    </tr>
+                                        <td><strong>Dealer: <t t-if="doc.sale_id.partner_id.email" t-esc="doc.sale_id.partner_id.email"></t>
+                                            <t t-else="" t-esc="doc.sale_id.partner_id.name"></t>
+                                        </strong></td></tr>
                                 </tfoot>
 
                             </table>
