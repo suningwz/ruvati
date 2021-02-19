@@ -154,7 +154,7 @@ class StockPicking(models.Model):
         if self.carrier_id.delivery_type == 'fedex':
             return_label_ids = self.env['ir.attachment'].search(
                 [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
-                 '|', ('name', 'like', '%s%%' % 'LabelFedex')])
+                 ('name', 'like', '%s%%' % 'LabelFedex')])
             if not return_label_ids:
                 raise UserError("Shipping labels not generated")
             return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
