@@ -6,13 +6,37 @@ from itertools import groupby
 from odoo import api, fields, models, exceptions, _, tools
 from odoo.exceptions import UserError
 from odoo.tools import pdf
+import io
+import PIL.PdfImagePlugin   # activate PDF support in PIL
+from PIL import Image
 from odoo.addons.delivery_ups.models.ups_request import UPSRequest
 from odoo.http import request
+from zeep.exceptions import Fault
+import base64
 
 _logger = logging.getLogger(__name__)
 
 
 class UPSRequestRef(UPSRequest):
+
+    def save_label(self, image64, label_file_type='GIF'):
+        img_decoded = base64.decodebytes(image64.encode('utf-8'))
+        if label_file_type == 'GIF':
+            # Label format is GIF, so need to rotate and convert as PDF
+            image_string = io.BytesIO(img_decoded)
+            im = Image.open(image_string)
+
+            label_result = io.BytesIO()
+            im.save(label_result, 'pdf', quality=95)
+            return label_result.getvalue()
+        else:
+            image_string = io.BytesIO(img_decoded)
+            im = Image.open(image_string)
+            im1 = im.rotate(-90, expand=1)
+            im2 = im1.crop((0,0,800,1200))
+            label_result = io.BytesIO()
+            im2.save(label_result, 'png',)
+            return label_result.getvalue()
 
     def send_shipping(self, shipment_info, packages, shipper, ship_from, ship_to, packaging_type, service_type, saturday_delivery, duty_payment, cod_info=None, label_file_type='GIF', ups_carrier_account=False, **kwargs):
         client = self._set_client(self.ship_wsdl, 'Ship', 'ShipmentRequest')
@@ -22,6 +46,7 @@ class UPSRequestRef(UPSRequest):
         request_type = "shipping"
         label = self.factory_ns2.LabelSpecificationType()
         label.LabelImageFormat = self.factory_ns2.LabelImageFormatType()
+        label_file_type = 'PNG'
         label.LabelImageFormat.Code = label_file_type
         label.LabelImageFormat.Description = label_file_type
         if label_file_type != 'GIF':

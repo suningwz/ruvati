@@ -151,12 +151,16 @@ class StockPicking(models.Model):
 
     def generate_shipping_label(self):
         packing_slip = self.env.ref('delivery_shipping_label.action_report_packslip').render_qweb_pdf(self.id)[0]
-        return_label_ids = self.env['ir.attachment'].search(
-            [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
-             '|', ('name', 'like', '%s%%' % 'LabelFedex'), ('name', 'like', '%s%%' % 'LabelUPS')]) 
-        if not return_label_ids:
-            raise UserError("Shipping labels not generated")
-        return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
+        if self.carrier_id.delivery_type == 'fedex':
+            return_label_ids = self.env['ir.attachment'].search(
+                [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
+                 '|', ('name', 'like', '%s%%' % 'LabelFedex')])
+            if not return_label_ids:
+                raise UserError("Shipping labels not generated")
+            return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
+        else:
+            return_label = self.env.ref('delivery_shipping_label.action_report_labelslip').render_qweb_pdf(self.id)[0]
+            return_labels = [return_label]
         packing_slips = [packing_slip]
         delivery_type = self.carrier_id.delivery_type
         merged_pdf = self.with_context(delivery_type=delivery_type).merge_pdfs(packing_slips, return_labels)
@@ -186,14 +190,14 @@ class StockPicking(models.Model):
                 page_rec = reader_packing.getPage(page)
                 page_label = reader_label.getPage(page)
                 if self._context.get('delivery_type') == 'fedex':
-                    page_label.cropBox.setLowerRight((321, 0))
-                    page_label.cropBox.setUpperRight((321, 612))
-                    page_label.cropBox.setLowerLeft((31, 0))
-                    page_label.cropBox.setUpperLeft((31, 612))
+                    page_label.cropBox.setLowerRight((321, 120))
+                    page_label.cropBox.setUpperRight((321, 610))
+                    page_label.cropBox.setLowerLeft((31, 120))
+                    page_label.cropBox.setUpperLeft((31, 610))
                     page_label_clockwise = page_label.rotateClockwise(270)
                 else:
-                    page_label.scaleTo(6*72, 4*72)
-                    page_label_clockwise = page_label.rotateClockwise(90)
+                    # page_label.scaleTo(6*72, 4*72)
+                    page_label_clockwise = page_label
                 writer.addPage(page_label_clockwise)
                 writer.addPage(page_rec)
 

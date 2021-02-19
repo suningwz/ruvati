@@ -548,16 +548,25 @@ class Provider(models.Model):
                 package_labels = package_labels + [(track_number, label_binary_data)]
             
             carrier_tracking_ref = "+".join([pl[0] for pl in package_labels])
+            label_data = [pl[1] for pl in package_labels]
             #writing tracking reference to respective packages
             for index, package in enumerate(picking.package_ids):
                 package.carrier_tracking_ref = carrier_tracking_ref.split('+')[index]
-            
+                # package.label_data = label_data[index]
+                attachments = [('LabelUPS-%s.%s' % (package.carrier_tracking_ref, 'PNG'), label_data[index])]
+                package.message_post(body="label created", attachments=attachments)
+                return_label_ids = self.env['ir.attachment'].search(
+                    [('res_model', '=', 'stock.quant.package'), ('res_id', '=', package.id),
+                     '|', ('name', 'like', '%s%%' % 'LabelFedex'), ('name', 'like', '%s%%' % 'LabelUPS')],limit=1)
+                package.label_data = return_label_ids.datas
+                package.label_id = return_label_ids.id
+                # print(c)
             logmessage = _("Shipment created into UPS<br/>"
                            "<b>Tracking Numbers:</b> %s<br/>"
                            "<b>Packages:</b> %s") % (carrier_tracking_ref, ','.join(package_names))
-            if self.ups_label_file_type != 'GIF':
-                attachments = [('LabelUPS-%s.%s' % (pl[0], self.ups_label_file_type), pl[1]) for pl in package_labels]
             if self.ups_label_file_type == 'GIF':
+                attachments = [('LabelUPS-%s.%s' % (pl[0], 'PNG'), pl[1]) for pl in package_labels]
+            if self.ups_label_file_type != 'GIF':
                 attachments = [('LabelUPS.pdf', pdf.merge_pdf([pl[1] for pl in package_labels]))]
             picking.message_post(body=logmessage, attachments=attachments)
             shipping_data = {
