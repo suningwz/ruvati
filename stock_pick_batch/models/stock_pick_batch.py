@@ -27,14 +27,12 @@ class StockPickingBatch(models.Model):
         return res
 
     def name_get (self):
-        res = []
+        result = []
         for rec in self:
-            if rec.reference:
-                name = rec.reference
-                res.append((rec.id, name))
-                return res
-        return super(StockPickingBatch, self).name_get()
-
+            name = rec.reference or rec.name
+            result.append((rec.id, name))
+        return result
+        
     @api.onchange('picking_type_id')
     def _onchange_pic_type(self):
         if self.picking_type_id:

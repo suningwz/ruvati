@@ -15,6 +15,7 @@ Custom module implemented for Ruvati Website.
 
     'data': [
             'views/template.xml',
+            'views/product_view.xml'
             ],
 
     'depends': ['website_sale'],
