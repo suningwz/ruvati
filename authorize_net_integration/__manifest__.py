@@ -45,7 +45,7 @@ Authorize.Net Payment Gateway Integration module for making payments through aut
 
     ],
 
-    'depends': ['base', 'base_setup', 'sale', 'account', 'payment_gateway_ui','payment_authorize'],
+    'depends': ['base', 'base_setup', 'sale', 'account', 'payment_gateway_ui'],
     'installable': True,
     'auto_install': False,
     'application': False,
