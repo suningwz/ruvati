@@ -41,11 +41,12 @@ Authorize.Net Payment Gateway Integration module for making payments through aut
         "views/account_journal_view.xml",
         "views/result_page_payment.xml",
         "views/payment_succesful_page.xml",
+        "views/payment_auth_data.xml",
         "security/ir.model.access.csv",
 
     ],
 
-    'depends': ['base', 'base_setup', 'sale', 'account', 'payment_gateway_ui'],
+    'depends': ['base', 'base_setup', 'sale', 'account', 'payment_gateway_ui','payment_authorize'],
     'installable': True,
     'auto_install': False,
     'application': False,
