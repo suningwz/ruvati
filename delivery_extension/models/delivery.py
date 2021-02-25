@@ -138,7 +138,8 @@ class Provider(models.Model):
                         package_width=packaging.width,
                         package_length=packaging.length,
                         sequence_number=sequence,
-                        po_number='8119',
+                        po_number=order.client_order_ref and order.client_order_ref or po_number,
+#                        po_number='8119',
                         dept_number=dept_number,
                         reference=picking.display_name,
                     )
@@ -219,7 +220,8 @@ class Provider(models.Model):
                         package_height=packaging.height,
                         package_width=packaging.width,
                         package_length=packaging.length,
-                        po_number='8119',
+                        po_number=order.client_order_ref and order.client_order_ref or po_number,
+#                        po_number='8119',
                         dept_number=dept_number,
                         reference=picking.display_name,
                     )
