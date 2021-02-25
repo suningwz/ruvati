@@ -3,6 +3,14 @@
 from odoo import models, fields, api, _
 
 
+class PaymentAcquirerAuthorize(models.Model):
+    _inherit = 'payment.acquirer'
+
+    authorize_login = fields.Char(string='API Login Id', required=False, groups='base.group_user')
+    authorize_transaction_key = fields.Char(string='API Transaction Key', required=False, groups='base.group_user')
+    authorize_signature_key = fields.Char(string='API Signature Key', required=False, groups='base.group_user')
+
+
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
