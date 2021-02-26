@@ -212,6 +212,11 @@ class UPSRequestRef(UPSRequest):
                         reference_number_po.Code = 'PO'
                         reference_number_po.Value = str(order.client_order_ref and order.client_order_ref or po_number)
                         package.ReferenceNumber.append(reference_number_po)
+                        
+                    reference_number_inv = self.factory_ns2.ReferenceNumberType()
+                    reference_number_inv.Code = 'IK'
+                    reference_number_inv.Value = order.display_name or False
+                    package.ReferenceNumber.append(reference_number_inv)
             Packages.append(package)
         return Packages
 

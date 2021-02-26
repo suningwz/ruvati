@@ -49,3 +49,51 @@ class FedexRequestShipCollect(FedexRequest):
         self.RequestedShipment.Recipient = self.factory.Party()
         self.RequestedShipment.Recipient.Contact = Contact
         self.RequestedShipment.Recipient.Address = Address
+        
+    def _add_package(self, weight_value, package_code=False, package_height=0, package_width=0, package_length=0, sequence_number=False, mode='shipping', po_number=False, dept_number=False, reference=False, **kwargs):
+        package = self.factory.RequestedPackageLineItem()
+        package_weight = self.factory.Weight()
+        package_weight.Value = weight_value
+        package_weight.Units = self.RequestedShipment.TotalWeight.Units
+
+        package.PhysicalPackaging = 'BOX'
+        if package_code == 'YOUR_PACKAGING':
+            package.Dimensions = self.factory.Dimensions()
+            package.Dimensions.Height = package_height
+            package.Dimensions.Width = package_width
+            package.Dimensions.Length = package_length
+            # TODO in master, add unit in product packaging and perform unit conversion
+            package.Dimensions.Units = "IN" if self.RequestedShipment.TotalWeight.Units == 'LB' else 'CM'
+        if po_number:
+            po_reference = self.factory.CustomerReference()
+            po_reference.CustomerReferenceType = 'P_O_NUMBER'
+            po_reference.Value = po_number
+            package.CustomerReferences.append(po_reference)
+        if dept_number:
+            dept_reference = self.factory.CustomerReference()
+            dept_reference.CustomerReferenceType = 'DEPARTMENT_NUMBER'
+            dept_reference.Value = dept_number
+            package.CustomerReferences.append(dept_reference)
+        if reference:
+            customer_reference = self.factory.CustomerReference()
+            customer_reference.CustomerReferenceType = 'CUSTOMER_REFERENCE'
+            customer_reference.Value = reference
+            package.CustomerReferences.append(customer_reference)
+        if kwargs.get('invoice_number', False):
+            invoice_reference = self.factory.CustomerReference()
+            invoice_reference.CustomerReferenceType = 'INVOICE_NUMBER'
+            invoice_reference.Value = kwargs.get('invoice_number')
+            package.CustomerReferences.append(invoice_reference)
+
+        package.Weight = package_weight
+        if mode == 'rating':
+            package.GroupPackageCount = 1
+        if sequence_number:
+            package.SequenceNumber = sequence_number
+        else:
+            self.hasOnePackage = True
+
+        if mode == 'rating':
+            self.RequestedShipment.RequestedPackageLineItems.append(package)
+        else:
+            self.RequestedShipment.RequestedPackageLineItems = package
