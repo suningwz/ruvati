@@ -12,6 +12,20 @@
 
                 </xpath>
 
+                <xpath expr="//field[@name='partner_id']" position="attributes">
+                    <attribute name="domain">['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_amazon_customer','=',False)]</attribute>
+                </xpath>
+
+                <xpath expr="//field[@name='partner_invoice_id']" position="attributes">
+                    <attribute name="domain">['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_amazon_customer','=',False)]</attribute>
+                </xpath>
+
+                <xpath expr="//field[@name='partner_shipping_id']" position="attributes">
+                    <attribute name="domain">['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_amazon_customer','=',False)]</attribute>
+                </xpath>
+
+
+
 <!--                <xpath expr="//button[@name='action_open_delivery_wizard']" position="attributes">-->
 <!--                    <attribute name="attrs">{'invisible': ['|', '|','|',('is_amazon_order','=',True),('is_all_service', '=', True), ('order_line', '=', []), ('delivery_set', '=', True)]}</attribute>-->
 

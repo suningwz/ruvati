@@ -23,7 +23,7 @@ class BatchPickingReport(models.AbstractModel):
                 'pick_qty': int(move.product_uom_qty),
                 'name': move.picking_id.name,
                 'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in
-                                 move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc],
+                                 move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc][:3],
             })
         for r in [list(data.values()) for data in result.values()]:
             batch_pick_list.extend(r)
@@ -31,6 +31,18 @@ class BatchPickingReport(models.AbstractModel):
         batch_pick_list.sort(key=lambda r: r['location_qty'] and r['location_qty'][0][0] or '')
         return batch_pick_list
 
+    def get_intern_picking_list(self, batch_pick):
+        loc = self.env['stock.location'].search([('id', 'child_of', batch_pick.picking_type_id.warehouse_id.lot_stock_id.id)])
+        batch_pick_dict = {}
+        for pick in batch_pick.picking_ids:
+            for move in pick.mapped('move_lines'):
+                batch_pick_dict.setdefault(pick, []).append({
+                                        'SKU': move.product_id.default_code,
+                                        'pick_qty': int(move.product_uom_qty),
+                                         'name': move.picking_id.name,
+                                        'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in
+                                 move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc]})
+        return  batch_pick_dict
 
     @api.model
     def _get_report_values(self, docids, data=None):
@@ -40,5 +52,6 @@ class BatchPickingReport(models.AbstractModel):
                 'docs': docs,
                 'data': data,
                 'get_picking_list': self.get_picking_list,
+                'get_intern_picking_list': self.get_intern_picking_list,
                 }
 

@@ -140,7 +140,6 @@ class StockPicking(models.Model):
     def _update_status(self):
         for picking in self:
             order = picking.purchase_id
-            print ('orderrrrrrrr', order)
             warehouse_id = order.picking_type_id.warehouse_id
             # if order and order.picking_type_id and order.picking_type_id.warehouse_id.code == 'OC':
             if order and order.state != 'cancel':
@@ -150,20 +149,15 @@ class StockPicking(models.Model):
                     ordered_qty += line.product_qty
                     qty_received_warehouse += line.qty_received_warehouse
                     po_qty_ocean += (line.qty_received - line.qty_received_warehouse)
-                    print ('lineeeeeeeee', po_qty_ocean, line.qty_received, line.qty_received_warehouse, ordered_qty)
                 if warehouse_id.warehouse_type == 'ocean':
                     if po_qty_ocean > 0 :
-                        print ('oeannnnnnnnn')
                         order.state = 'transit'
                     elif qty_received_warehouse == ordered_qty:
-                        print ('doneeeeeee')
                         order.state = 'done'
                     else:
-                        print ('purchaseeeeee')
                         order.state = 'purchase'
                 else:
                     order.state = (qty_received == ordered_qty) and 'done' or 'purchase'
-#            print (hi)
 
 #    @api.multi
 #    def write(self, vals):

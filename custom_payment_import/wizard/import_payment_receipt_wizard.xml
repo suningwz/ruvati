@@ -9,7 +9,7 @@
                     <sheet>
                         <group>
                             <group>
-                                <field name='partner_id' required="1"/>
+                                <field name='partner_id' required="1" options="{'no_create_edit': True}"/>
                                 <field name='check_number'/>
                             </group>
                             <group>

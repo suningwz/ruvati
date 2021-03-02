@@ -18,31 +18,39 @@ class StockPicking(models.Model):
                     rec.put_in_pack()
         return super(StockPicking, self).action_done()
 
-    def put_in_pack(self):
-        self.ensure_one()
-        if self.state not in ('done', 'cancel'):
-            picking_move_lines = self.move_line_ids
-            if (
-                not self.picking_type_id.show_reserved
-                and not self.env.context.get('barcode_view')
-            ):
-                picking_move_lines = self.move_line_nosuggest_ids
+    def action_assign(self):
+        res = super(StockPicking, self).action_assign()
+        for rec in self:
+            if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
+                if not rec.has_packages:
+                    rec.with_context({'assign': True}).put_in_pack()
+        return res
 
-            move_line_ids = picking_move_lines.filtered(lambda ml:
-                float_compare(ml.qty_done, 0.0, precision_rounding=ml.product_uom_id.rounding) > 0
-                and not ml.result_package_id
-            )
-            if not move_line_ids:
-                move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
-                                     precision_rounding=ml.product_uom_id.rounding) > 0 and float_compare(ml.qty_done, 0.0,
-                                     precision_rounding=ml.product_uom_id.rounding) == 0)
-            if move_line_ids:
-                res = self._pre_put_in_pack_hook(move_line_ids)
-
-                res = self._put_in_pack(move_line_ids)
-                return res
-            else:
-                raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
+    # def put_in_pack(self):
+    #     self.ensure_one()
+    #     if self.state not in ('done', 'cancel'):
+    #         picking_move_lines = self.move_line_ids
+    #         if (
+    #             not self.picking_type_id.show_reserved
+    #             and not self.env.context.get('barcode_view')
+    #         ):
+    #             picking_move_lines = self.move_line_nosuggest_ids
+    #
+    #         move_line_ids = picking_move_lines.filtered(lambda ml:
+    #             float_compare(ml.qty_done, 0.0, precision_rounding=ml.product_uom_id.rounding) > 0
+    #             and not ml.result_package_id
+    #         )
+    #         if not move_line_ids:
+    #             move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
+    #                                  precision_rounding=ml.product_uom_id.rounding) > 0 and float_compare(ml.qty_done, 0.0,
+    #                                  precision_rounding=ml.product_uom_id.rounding) == 0)
+    #         if move_line_ids:
+    #             res = self._pre_put_in_pack_hook(move_line_ids)
+    #
+    #             res = self._put_in_pack(move_line_ids)
+    #             return res
+    #         else:
+    #             raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
 
     def put_in_pack(self):
         self.ensure_one()
@@ -70,6 +78,8 @@ class StockPicking(models.Model):
                 res = self._put_in_pack(move_line_ids)
                 return res
             else:
+                if self._context.get('assign',False):
+                    return {}
                 raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
 
     def _put_in_pack(self, move_line_ids):
@@ -105,7 +115,7 @@ class StockPicking(models.Model):
                     if pack_line.product_uom_qty > 1 and pack_line_count != pack_line.product_uom_qty:
                         pack_line_count += 1
                         new_pack_line = pack_line.copy(
-                            default={'product_uom_qty': 0, 'qty_done': 1})
+                            default={'product_uom_qty': 0, 'qty_done': 0})
                         # pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
                         new_pack_line.write({'product_uom_qty': 1})
 
@@ -134,18 +144,23 @@ class StockPicking(models.Model):
                     new_pack_line.write({
                         'result_package_id': package.id,
                     })
-                if pack_line.product_uom_qty > 1:
-                    pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
+                if pack_line.product_uom_qty >= 1:
+                    pack_line.write({'product_uom_qty': 1, 'qty_done': 0})
+
         return package
 
     def generate_shipping_label(self):
         packing_slip = self.env.ref('delivery_shipping_label.action_report_packslip').render_qweb_pdf(self.id)[0]
-        return_label_ids = self.env['ir.attachment'].search(
-            [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
-             '|', ('name', 'like', '%s%%' % 'LabelFedex'), ('name', 'like', '%s%%' % 'LabelUPS')]) 
-        if not return_label_ids:
-            raise UserError("Shipping labels not generated")
-        return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
+        if self.carrier_id.delivery_type == 'fedex':
+            return_label_ids = self.env['ir.attachment'].search(
+                [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
+                 ('name', 'like', '%s%%' % 'LabelFedex')])
+            if not return_label_ids:
+                raise UserError("Shipping labels not generated")
+            return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
+        else:
+            return_label = self.env.ref('delivery_shipping_label.action_report_labelslip').render_qweb_pdf(self.id)[0]
+            return_labels = [return_label]
         packing_slips = [packing_slip]
         delivery_type = self.carrier_id.delivery_type
         merged_pdf = self.with_context(delivery_type=delivery_type).merge_pdfs(packing_slips, return_labels)
@@ -175,14 +190,14 @@ class StockPicking(models.Model):
                 page_rec = reader_packing.getPage(page)
                 page_label = reader_label.getPage(page)
                 if self._context.get('delivery_type') == 'fedex':
-                    page_label.cropBox.setLowerRight((321, 0))
-                    page_label.cropBox.setUpperRight((321, 612))
-                    page_label.cropBox.setLowerLeft((31, 0))
-                    page_label.cropBox.setUpperLeft((31, 612))
+                    page_label.cropBox.setLowerRight((321, 120))
+                    page_label.cropBox.setUpperRight((321, 610))
+                    page_label.cropBox.setLowerLeft((31, 120))
+                    page_label.cropBox.setUpperLeft((31, 610))
                     page_label_clockwise = page_label.rotateClockwise(270)
                 else:
-                    page_label.scaleTo(6*72, 4*72)
-                    page_label_clockwise = page_label.rotateClockwise(90)
+                    # page_label.scaleTo(6*72, 4*72)
+                    page_label_clockwise = page_label
                 writer.addPage(page_label_clockwise)
                 writer.addPage(page_rec)
 
@@ -202,7 +217,8 @@ class StockPicking(models.Model):
         if self.picking_type_id.warehouse_id.delivery_steps == 'pick_pack_ship' and qc_picking and qc_picking.origin == self.origin and qc_picking.picking_type_id == self.picking_type_id.warehouse_id.pack_type_id:
             return qc_picking.name
         return self.name
-        
+
+
 class StockPickingBatch(models.Model):
     _inherit = 'stock.picking.batch'
         

@@ -13,14 +13,15 @@ class StockPicking(models.Model):
         if self.picking_type_id == self.picking_type_id.warehouse_id.pack_type_id:
             if not all(move.product_uom_qty == move.quantity_done for move in self.move_lines):
                 raise ValidationError('Cannot validate the QC process without completing Quality Check for all products of this order')
-            
+            out_picking = self.env['stock.picking']
             if self.state == 'done':
                 raise ValidationError('This picking is already validated.')
             if all(move.product_uom_qty == move.quantity_done for move in self.move_lines):
                 res = super(StockPicking, self).button_validate()
                 cr.execute("select move_dest_id from stock_move_move_rel where move_orig_id = %s" % (self.move_lines[0].id))
                 out_move_ids = [x[0] for x in cr.fetchall()]
-                out_picking = self.env['stock.move'].browse(out_move_ids)[0].picking_id
+                if out_move_ids:
+                    out_picking = self.env['stock.move'].browse(out_move_ids)[0].picking_id
                 if out_picking:
                     out_picking.action_assign()
                     for line in out_picking.move_line_ids:
@@ -68,6 +69,15 @@ class StockPicking(models.Model):
                 if all(move.product_uom_qty == move.quantity_done for move in rec.move_lines):
                     rec.button_validate()
         return True
+
+    def get_all_picking_products(self):
+        """Returns all products of current picking.
+        """
+        res = []
+        for rec in self:
+            for product in rec.move_lines.mapped('product_id'):
+                res.append(product.id)
+        return res
 
 StockPicking()
 

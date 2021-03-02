@@ -12,7 +12,8 @@
 
     'data': [
             'views/amazone_account_view.xml',
-            'views/sale_view.xml'
+            'views/sale_view.xml',
+            'views/partner_view.xml'
     ],
     'demo_xml': [],
     'installable': True,

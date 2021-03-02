@@ -15,7 +15,7 @@
         'views/stock_barcode_templates.xml',
     ],
     'qweb': [
-#        "static/src/xml/qweb_templates.xml",
+        "static/src/xml/qweb_templates.xml",
     ],
     'demo_xml': [],
     'installable': True,

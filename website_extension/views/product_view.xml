@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<odoo>
+
+    <record id="website_product_form_view" model="ir.ui.view">
+        <field name="name">product.product.web.view</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_published']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="website_publish_button" type="object" class="oe_stat_button" icon="fa-globe">
+                    <field name="is_published" widget="website_publish_button"/>
+                </button>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

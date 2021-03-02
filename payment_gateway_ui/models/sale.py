@@ -29,9 +29,7 @@ class SaleOrder(models.Model):
             if not gateway_type:
                 raise UserError(_('Warning ! \n Please check Payment Gateway configuration.'))
             self.env['payment.token.invoice'].edi_token_recreate(record, 'sale')
-            print('inside resend')
             template_id = self.env.ref('payment_gateway_ui.email_template_sale_order_payment')
-            print('template_id', template_id)
             if not template_id:
                 raise UserError(_('Warning ! \n No Email Template found.'))
             compose_form = self.env.ref('mail.email_compose_message_wizard_form', False)
@@ -108,17 +106,12 @@ class SaleOrder(models.Model):
                 'fixed_amount': total_amount,
             }
             sale_advance = self.env['sale.advance.payment.inv'].create(sale_advance_vals)
-            print('invoice_total', invoice_total)
-            print('paramsssssssssss22222', total_amount + paid_amount + handling_fee)
-            # print(test)
             if total_amount + paid_amount + handling_fee >= invoice_total:
-                print('inside iffffffff')
                 sale_advance.write({
                     'advance_payment_method': 'delivered',
                     'deduct_down_payments': True,
                 })
             if sale_advance.advance_payment_method == 'delivered':
-                print('inside alll')
                 invoice = sale_order._create_invoices(final=sale_advance.deduct_down_payments)
                 # invoice = self.env['account.move'].browse(invoice_id)
                 invoice.action_post()
@@ -161,9 +154,7 @@ class SaleOrder(models.Model):
                     'is_downpayment': True,
                 })
                 del context
-                print('downpaymentvals', amount)
                 invoice = sale_advance._create_invoice(sale_order, so_line, amount)
-                print('inside downpayment', invoice)
                 invoice.action_post()
                 return invoice
 
@@ -174,7 +165,6 @@ class SaleOrder(models.Model):
         token = self.env['payment.token.invoice'].get_invoice_payment_record(self, 'sale')
         web_root_url = self.env['ir.config_parameter'].get_param('web.base.url')
         gateway_type = self.env['ir.config_parameter'].sudo().get_param('gateway_type')
-        print('gateway_type', gateway_type)
         EDI_VIEW_WEB_URL = '%s/%s/payment?token=%s' % (web_root_url, gateway_type, token)
         return EDI_VIEW_WEB_URL
 

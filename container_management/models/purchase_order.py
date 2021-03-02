@@ -113,7 +113,6 @@ class PurchaseOrderLine(models.Model):
                 location_id = self.env['stock.warehouse'].search([('warehouse_type', '=', 'ocean')]).lot_stock_id
     #            ('warehouse_type', '=', 'ocean'), 
                 int_moves = self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id), ('state', '=', 'done')]).filtered(lambda r : r.location_dest_id.location_id != location_id)
-                print ('movesssssssss', self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id), ('location_id', '=', location_id.id)]))
     #            for picking in line.order_id.picking_ids:
     #                qty_received_warehouse = 0
     #                moves = picking.move_lines.search(domain).filtered(
@@ -137,7 +136,6 @@ class PurchaseOrderLine(models.Model):
                 line.qty_received_ocean = line.qty_received - line.qty_received_warehouse
             else:
                 line.qty_received_ocean = 0.0
-#            print ('qtyyyy', line)
 #            domain = [('origin', '=', line.order_id.name), ('product_id', '=', line.product_id.id)]
 #            location_id = self.env['stock.warehouse'].search([('warehouse_type', '=', 'ocean'), ('code', '=', 'OC')]).lot_stock_id
 #            int_moves = self.env['stock.move'].search([('picking_type_id.code','=','incoming'),('picking_id.origin','=',line.order_id.name),('product_id', '=', line.product_id.id)]).filtered(lambda r : r.location_dest_id.location_id == location_id)
@@ -151,7 +149,6 @@ class PurchaseOrderLine(models.Model):
 #            for move in int_moves:
 #                qty_received_ocean += move.product_uom_qty
 #                line.qty_received_ocean = qty_received_ocean
-#            print ('oceannnnnnn', line.qty_received_ocean)
 
     @api.depends('order_id.state', 'move_ids.state')
     def _compute_qty_received(self):

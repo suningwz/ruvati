@@ -18,6 +18,10 @@ var SettingsWidget = require('stock_barcode.SettingsWidget');
 var _t = core._t;
 var Session = require('web.session'); 
 
+function isChildOf(locationParent, locationChild) {
+    return _.str.startsWith(locationChild.parent_path, locationParent.parent_path);
+}
+
 var QualityCheckClientAction = require('stock_barcode.ClientAction');
 
 var PickingQualityCheckClientAction = QualityCheckClientAction.include({
@@ -39,7 +43,182 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
      *     highlighting a new one
      * @return {object} object wrapping the incremented line and some other informations
      */
+
+     _process_pick_operation : function(params){
+
+        var product = params.product;
+        var lotId = params.lot_id;
+        var lotName = params.lot_name;
+        var packageId = params.package_id;
+        var currentPage = this.pages[0];
+        var currentPageData = this.pages[this.currentPageIndex];
+
+        var res = false;
+        var loop_time = currentPage.lines.length;
+        for (var z = 0; z < loop_time; z++) {
+            var lineInCurrentPage = currentPage.lines[z];
+            if (lineInCurrentPage.qty_done===1){
+            continue;
+            }
+            if (lineInCurrentPage.product_id.id === product.id) {
+                // If the line is empty, we could re-use it.
+                if (
+                    (this.actionParams.model === 'stock.picking' &&
+                     ! lineInCurrentPage.lot_id &&
+                     ! lineInCurrentPage.lot_name &&
+                     ! lineInCurrentPage.package_id
+                    ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     ! lineInCurrentPage.product_qty &&
+                     ! lineInCurrentPage.prod_lot_id
+                    )
+                ) {
+                    res = lineInCurrentPage;
+//                    res['is_updated'] = 1;
+                    if(this.currentPageIndex > 0){
+                        currentPage.lines.splice(z,1);
+                        res.location_id = {'id':currentPageData.location_id,'display_name':currentPageData.location_name};
+                        currentPageData.lines.push(res);
+                    }
+                    break;
+
+                }
+
+                if (product.tracking === 'serial' &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                      lineInCurrentPage.qty_done > 0
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.product_qty > 0
+                    ))) {
+                    continue;
+                }
+                if (lineInCurrentPage.qty_done &&
+                (this.actionParams.model === 'stock.inventory' ||
+                lineInCurrentPage.location_dest_id.id === currentPage.location_dest_id) &&
+                this.scannedLines.indexOf(lineInCurrentPage.virtual_id || lineInCurrentPage.id) === -1 &&
+                lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                if (lotId &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                     lineInCurrentPage.lot_id &&
+                     lineInCurrentPage.lot_id[0] !== lotId
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.prod_lot_id &&
+                     lineInCurrentPage.prod_lot_id[0] !== lotId
+                    )
+                )) {
+                    continue;
+                }
+                if (lotName &&
+                    lineInCurrentPage.lot_name &&
+                    lineInCurrentPage.lot_name !== lotName
+                    ) {
+                    continue;
+                }
+                if (packageId &&
+                    (! lineInCurrentPage.package_id ||
+                    lineInCurrentPage.package_id[0] !== packageId[0])
+                    ) {
+                    continue;
+                }
+                if(lineInCurrentPage.product_uom_qty && lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                res = lineInCurrentPage;
+                break;
+            }
+        }
+        return res;
+     },
+
+     _findCandidateLineToIncrement: function (params) {
+         var picking_type_code = this.currentState.picking_type_code;
+        if (this.actionParams.model === 'stock.picking' && picking_type_code ==='internal'){
+            return this._process_pick_operation(params);
+        }
+        var product = params.product;
+        var lotId = params.lot_id;
+        var lotName = params.lot_name;
+        var packageId = params.package_id;
+        var currentPage = this.pages[this.currentPageIndex];
+        var res = false;
+
+        for (var z = 0; z < currentPage.lines.length; z++) {
+            var lineInCurrentPage = currentPage.lines[z];
+            if (lineInCurrentPage.product_id.id === product.id) {
+                // If the line is empty, we could re-use it.
+                if (lineInCurrentPage.virtual_id &&
+                    (this.actionParams.model === 'stock.picking' &&
+                     ! lineInCurrentPage.qty_done &&
+                     ! lineInCurrentPage.product_uom_qty &&
+                     ! lineInCurrentPage.lot_id &&
+                     ! lineInCurrentPage.lot_name &&
+                     ! lineInCurrentPage.package_id
+                    ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     ! lineInCurrentPage.product_qty &&
+                     ! lineInCurrentPage.prod_lot_id
+                    )
+                ) {
+                    res = lineInCurrentPage;
+                    break;
+                }
+
+                if (product.tracking === 'serial' &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                      lineInCurrentPage.qty_done > 0
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.product_qty > 0
+                    ))) {
+                    continue;
+                }
+                if (lineInCurrentPage.qty_done &&
+                (this.actionParams.model === 'stock.inventory' ||
+                lineInCurrentPage.location_dest_id.id === currentPage.location_dest_id) &&
+                this.scannedLines.indexOf(lineInCurrentPage.virtual_id || lineInCurrentPage.id) === -1 &&
+                lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                if (lotId &&
+                    ((this.actionParams.model === 'stock.picking' &&
+                     lineInCurrentPage.lot_id &&
+                     lineInCurrentPage.lot_id[0] !== lotId
+                     ) ||
+                    (this.actionParams.model === 'stock.inventory' &&
+                     lineInCurrentPage.prod_lot_id &&
+                     lineInCurrentPage.prod_lot_id[0] !== lotId
+                    )
+                )) {
+                    continue;
+                }
+                if (lotName &&
+                    lineInCurrentPage.lot_name &&
+                    lineInCurrentPage.lot_name !== lotName
+                    ) {
+                    continue;
+                }
+                if (packageId &&
+                    (! lineInCurrentPage.package_id ||
+                    lineInCurrentPage.package_id[0] !== packageId[0])
+                    ) {
+                    continue;
+                }
+                if(lineInCurrentPage.product_uom_qty && lineInCurrentPage.qty_done >= lineInCurrentPage.product_uom_qty) {
+                    continue;
+                }
+                res = lineInCurrentPage;
+                break;
+            }
+        }
+        return res;
+    },
+
     _incrementLines: function (params) {
+        var picking_type_code = this.currentState.picking_type_code;
         var line = this._findCandidateLineToIncrement(params);
         var isNewLine = false;
         if (line) {
@@ -49,15 +228,25 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 params.lot_name
                 ) {
                 if (this.actionParams.model === 'stock.picking') {
+                    if (picking_type_code === 'internal'){
+                    line.qty_done = params.product.qty || 1;
+                    }
+                    else{
                     line.qty_done += params.product.qty || 1;
+                    }
+
                 } else if (this.actionParams.model === 'stock.inventory') {
                     line.product_qty += params.product.qty || 1;
                 }
             }
         } else {
             if (this.actionParams.model === 'stock.picking') {
-                return {'discard': true,};  // returns if a non belonging product is scanned and thrown an error.
+                // returns if a non belonging product is scanned and thrown an error.
+                if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
+                    return {'discard': true,};
+                }
             }
+       if (this.actionParams.model === 'stock.picking' && picking_type_code !=='internal'){
             isNewLine = true;
             // Create a line with the processed quantity.
             if (params.product.tracking === 'none' ||
@@ -70,6 +259,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             }
             this._getLines(this.currentState).push(line);
             this.pages[this.currentPageIndex].lines.push(line);
+            }
         }
         if (this.actionParams.model === 'stock.picking') {
             if (params.lot_id) {
@@ -91,6 +281,9 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         };
     },
     
+    
+    
+    
     /**
      * Handle what needs to be done when a product is scanned.
      *
@@ -108,26 +301,38 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             if (product.tracking !== 'none') {
                 this.currentStep = 'lot';
             }
-            var res = this._incrementLines({'product': product, 'barcode': barcode});
+            
+            // Make an rpc to get the products belongs to current picking.
+            return this._rpc({
+                'model': 'stock.picking',
+                'method': 'get_all_picking_products',
+                'args': [self.actionParams.pickingId],
+            }).then(function (result) {
+                
+                
+            var res = self._incrementLines({'product': product, 'barcode': barcode, 'picking_product': result});
             // throws an error if the scanned product is not upto this picking.
             if (res.discard) {
                 errorMessage = _t("You are expected to scan products belongs to this picking");
                 return Promise.reject(errorMessage);
-            }
+            } 
+//            else {
+//                self._save();
+//            }
             // auto validate the QC if all the products are quality check pass.
-            if (this.actionParams.model === 'stock.picking') {
+            if (self.actionParams.model === 'stock.picking') {
                 self._save().then(function () {
                     self._rpc({
                         'model': self.actionParams.model,
                         'method': 'action_validate_qc',
                         'args': [[self.actionParams.pickingId]],
-                    })
+                    });
                 });
             }
             if (res.isNewLine) {
-                if (this.actionParams.model === 'stock.inventory') {
+                if (self.actionParams.model === 'stock.inventory') {
                     // FIXME sle: add owner_id, prod_lot_id, owner_id, product_uom_id
-                    return this._rpc({
+                    return self._rpc({
                         model: 'product.product',
                         method: 'get_theoretical_quantity',
                         args: [
@@ -141,22 +346,30 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                         return Promise.resolve({linesActions: linesActions});
                     });
                 } else {
-                    linesActions.push([this.linesWidget.addProduct, [res.lineDescription, this.actionParams.model]]);
+                    linesActions.push([self.linesWidget.addProduct, [res.lineDescription, self.actionParams.model]]);
                 }
             } else {
+                self._save().then(function(){
+                    self._reloadLineWidget(self.currentPageIndex);
+                })
+                
                 if (product.tracking === 'none') {
-                    linesActions.push([this.linesWidget.incrementProduct, [res.id || res.virtualId, product.qty || 1, this.actionParams.model]]);
+                    linesActions.push([self.linesWidget.incrementProduct, [res.id || res.virtualId, product.qty || 1, self.actionParams.model]]);
                 } else {
-                    linesActions.push([this.linesWidget.incrementProduct, [res.id || res.virtualId, 0, this.actionParams.model]]);
+                    linesActions.push([self.linesWidget.incrementProduct, [res.id || res.virtualId, 0, self.actionParams.model]]);
                 }
             }
-            this.scannedLines.push(res.id || res.virtualId);
+            self.scannedLines.push(res.id || res.virtualId);
             return Promise.resolve({linesActions: linesActions});
+                
+            });
+            
+            
         } else {
             // destroy current page before redirecting to another picking if it is PICK or QC.
-            if (barcode.includes("pick") || barcode.includes("qc") || barcode.includes("PICK") || barcode.includes("QC")) {
+            if (barcode.includes("PICK") || barcode.includes("QC") || barcode.includes("OUT") || barcode.includes("IN")) {
                 self.destroy();
-            }
+            } 
             var success = function (res) {
                 return Promise.resolve({linesActions: res.linesActions});
             };
@@ -188,6 +401,87 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         }
     },
     
+        /**
+     * Handle what needs to be done when a destination location is scanned.
+     *
+     * @param {string} barcode scanned barcode
+     * @param {Object} linesActions
+     * @returns {Promise}
+     */
+    _step_destination: function (barcode, linesActions) {
+        var errorMessage;
+
+        // Bypass the step if needed.
+        // allow internal transfers to scan source location.
+        if (this.mode === 'internal' || this.mode === 'delivery' || this.actionParams.model === 'stock.inventory') {
+            this._endBarcodeFlow();
+            return this._step_source(barcode, linesActions);
+        }
+        var destinationLocation = this.locationsByBarcode[barcode];
+        var location_change = false;
+        if (! isChildOf(this.currentState.location_dest_id, destinationLocation)) {
+            errorMessage = _t('This location is not a child of the main location.');
+            return Promise.reject(errorMessage);
+        } else {
+            if (this.mode === 'no_multi_locations') {
+                if (this.groups.group_tracking_lot) {
+                    errorMessage = _t("You are expected to scan one or more products or a package available at the picking's location");
+                } else {
+                    errorMessage = _t('You are expected to scan one or more products.');
+                }
+                return Promise.reject(errorMessage);
+            }
+            
+            if (! this.scannedLines.length || this.mode === 'no_multi_locations') {
+                this.location_change = true;
+                this.scannedLines.push(this._getLines(this.currentState)[0].id);
+            }
+            var self = this;
+            // FIXME: remove .uniq() once the code is adapted.
+            _.each(_.uniq(this.scannedLines), function (idOrVirtualId) {
+                var currentStateLine = _.find(self._getLines(self.currentState), function (line) {
+                    return line.virtual_id &&
+                           line.virtual_id.toString() === idOrVirtualId ||
+                           line.id  === idOrVirtualId;
+                });
+                
+                if (!self.location_change && currentStateLine.qty_done - currentStateLine.product_uom_qty >= 0) {
+                    // Move the line.
+                    currentStateLine.location_dest_id.id = destinationLocation.id;
+                    currentStateLine.location_dest_id.display_name = destinationLocation.display_name;
+                } 
+                else {
+                    var current_state_line = _.find(self._getLines(self.currentState), function (line) {
+                        return line.location_dest_id.id == destinationLocation.id;
+                    });
+                    if (!current_state_line) {
+                        var newLine = $.extend(true, {}, currentStateLine);
+                        newLine.qty_done = 0;
+                        
+                        newLine.location_dest_id.id = destinationLocation.id;
+                        newLine.location_dest_id.display_name = destinationLocation.display_name;
+                        
+                        
+                        newLine.product_uom_qty = 0;
+                        var virtualId = self._getNewVirtualId();
+                        newLine.virtual_id = virtualId;
+                        delete newLine.id;
+                        self._getLines(self.currentState).push(newLine);
+                    }
+                    
+                    // Split the line.
+//                    var qty = currentStateLine.qty_done;
+//                    currentStateLine.qty_done -= qty;
+                }
+            });
+            
+            linesActions.push([this.linesWidget.clearLineHighlight, [undefined]]);
+            linesActions.push([this.linesWidget.highlightLocation, [true]]);
+            linesActions.push([this.linesWidget.highlightDestinationLocation, [true]]);
+            this.scanned_location_dest = destinationLocation;
+            return Promise.resolve({linesActions: linesActions});
+        }
+    },
 
 });
 return PickingQualityCheckClientAction;

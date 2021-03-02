@@ -14,7 +14,7 @@ var PickingQualityCheckMainMenu = MainMenu.MainMenu.include({
 
     _onBarcodeScanned: function(barcode) {
         var self = this;
-        if (!$.contains(document, this.el) && (!barcode.includes('pick')) && (!barcode.includes('PICK')) &&(!barcode.includes('qc')) && (!barcode.includes('QC'))) {
+        if (!$.contains(document, this.el) && (!barcode.includes('OUT')) && (!barcode.includes('PICK')) &&(!barcode.includes('IN')) && (!barcode.includes('QC'))) {
             return;
         }
         Session.rpc('/stock_barcode/scan_from_main_menu', {

@@ -10,7 +10,7 @@ class ResPartner(models.Model):
     def _default_picking_type(self):
         type_obj = self.env['stock.picking.type']
         company_id = self.env.context.get('company_id') or self.env.user.company_id.id
-        types = type_obj.search([('code', '=', 'incoming'), ('warehouse_id.company_id', '=', company_id)])
+        types = type_obj.search([('code', '=', 'incoming'), ('warehouse_id.warehouse_type', '=', 'ocean')], limit=1)
         if not types:
             types = type_obj.search([('code', '=', 'incoming'), ('warehouse_id', '=', False)])
         return types[:1]

@@ -10,11 +10,12 @@ class RMARetVerify(models.Model):
     name = fields.Char(string="Name")
     rma_id = fields.Many2one('rma.ret.mer.auth', string='RMA', copy=False)
     return_date = fields.Date('Date', default=fields.Date.context_today, help='Date', copy=False)
-    return_picking = fields.Char(string="Order")
-    return_product = fields.Char(string="Product")
+    return_picking = fields.Char(string="Order", help="Scan the Packing Slip barcode or enter Sale Order number")
+    return_product = fields.Char(string="Product Barcode", help="Scan or enter the product barcode")
+    product_id = fields.Many2one('product.product', string="Product")
     need_credit_memo = fields.Boolean('Need Refund Invoice?', default=True)
     state = fields.Selection([('draft', 'Draft'), ('accepted', 'Accepted')], string="State", default="draft", copy=False)
-    customer_po_number = fields.Char(string="PO number")
+    customer_po_number = fields.Char(string="PO number", help="Enter Customer PO Number ")
     tracking_number = fields.Char(string="Tracking Number")
     reason_id = fields.Many2one("rma.reasons", string="Reason")
     
@@ -24,32 +25,49 @@ class RMARetVerify(models.Model):
         vals.update({'name': sequence_val,})
         return super(RMARetVerify, self).create(vals)
     
+    @api.onchange('return_product')
+    def onchange_product_barcode(self):
+        if self.return_product:
+            product = self.env['product.product'].search([('barcode', '=', self.return_product)])
+            self.product_id = product and product.id or False
+        else:
+            self.product_id = False
+    
     def action_verify_accept(self):
 #        sequence_val = self.env['ir.sequence'].next_by_code('rma.rma') or '/'
 #        self.write({'name': sequence_val})
         picking = self.env['stock.picking']
+        if not self.return_picking and not self.customer_po_number:
+            raise ValidationError("You are expected to scan or enter an Order first.")
         if self.return_picking:
-            picking = self.env['stock.picking'].search([('name', '=', self.return_picking)])
+            picking = self.env['stock.picking'].search([('name', 'ilike', self.return_picking)])
+            if not picking:
+                sale_order = self.env['sale.order'].search([('name', 'ilike', self.return_picking)])
+                if sale_order:
+                    picking = self.env['stock.picking'].search([('origin', '=', sale_order.name), ('picking_type_id', '=', sale_order.warehouse_id.pack_type_id.id)], limit=1)
         elif self.customer_po_number:
             sale_order = self.env['sale.order'].search([('client_order_ref', '=', self.customer_po_number)], limit=1)
             if sale_order:
                 picking = self.env['stock.picking'].search([('origin', '=', sale_order.name), ('picking_type_id', '=', sale_order.warehouse_id.pack_type_id.id)], limit=1)
         else:
             pass
+        if not picking:
+            raise ValidationError("Please scan a valid Order")
         product = self.env['product.product'].search([('barcode', '=', self.return_product)])
+        self.product_id = product and product.id
         
-        if picking and product.id in picking.move_line_ids.mapped('product_id').ids:
+        if picking and self.product_id.id in picking.move_line_ids.mapped('product_id').ids:
             source_loc = self.env['stock.location'].search([('usage', '=', 'customer')], limit=1)
             destination_loc = picking.picking_type_id.warehouse_id.lot_stock_id
-            rma = self.create_rma(picking, product, source_loc, destination_loc)
+            rma = self.create_rma(picking, self.product_id, source_loc, destination_loc)
             move_vals = {
-                        'product_id': product and product.id or False,
-                        'name': product and product.name or False,
+                        'product_id': self.product_id and self.product_id.id or False,
+                        'name': self.product_id and self.product_id.name or False,
                         'origin': rma.name,
                         'product_uom_qty': 1.0,
                         'location_id': source_loc and source_loc.id or False,
                         'location_dest_id': destination_loc and destination_loc.id or False,
-                        'product_uom': product.uom_id and product.uom_id.id or False,
+                        'product_uom': self.product_id.uom_id and self.product_id.uom_id.id or False,
                         'rma_id': rma.id,
                         'group_id': picking.sale_id.procurement_group_id.id,
 #                        'price_unit': rma_line.price_subtotal or 0,
@@ -79,7 +97,7 @@ class RMARetVerify(models.Model):
             picking_rec.action_done()
             self.write({'state': 'accepted', 'rma_id': rma.id,})
         else:
-            raise ValidationError("Sorry!!! Cannot accept this product.")
+            raise ValidationError("Sorry!!! Product does not belongs to this Order.")
     
     def create_rma(self, picking, product, source_loc, destination_loc):
         if all([picking, product, source_loc, destination_loc]):

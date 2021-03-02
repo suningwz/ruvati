@@ -986,7 +986,6 @@ class RMARetMerAuth(models.Model):
                 }
 
     def count_invoice_ids(self):
-        print ('passsssssssssss')
         for rec in self:
             if rec.rma_type == 'customer':
                 action = self.env.ref('account.action_move_out_invoice_type').read()[0]

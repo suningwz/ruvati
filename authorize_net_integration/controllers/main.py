@@ -71,7 +71,6 @@ class PaymentPageWeb(http.Controller):
         details of card after submission
         authorization and capture payments
         """
-        print('form', form)
         # invoice = form['name']
         order = form['order']
         total_amount = float(form['total'])
@@ -82,7 +81,6 @@ class PaymentPageWeb(http.Controller):
         sale_obj = request.env['sale.order'].sudo().search([('name', '=', order)])
         draft_invoice_ids = sale_obj.invoice_ids.filtered(
             lambda r: r.state not in ('paid', 'cancel') and r.type == 'out_invoice')
-        print('draft_invoice_ids', draft_invoice_ids)
         inv_draft_amount = 0
         for draft_invoice in draft_invoice_ids:
             inv_draft_amount += draft_invoice.amount_total
@@ -91,7 +89,6 @@ class PaymentPageWeb(http.Controller):
 
         paid_invoice_ids = sale_obj.invoice_ids.filtered(
             lambda r: r.state == 'paid' and r.type == 'out_invoice')
-        print('paid_invoice_ids', paid_invoice_ids)
         inv_paid_amount = 0
         for paid_invoice in paid_invoice_ids:
             inv_paid_amount += paid_invoice.amount_total
@@ -100,7 +97,6 @@ class PaymentPageWeb(http.Controller):
 
         paid_amount = sale_obj.down_payment_amount
         invoice = sale_obj.sudo().create_down_payment(total_amount, handling_fee, invoice_total, paid_amount)
-        print('invoice', invoice)
         payment_token = request.env['payment.token.invoice'].sudo().search(
             [('order_id.name', '=', order), ('model', '=', 'sale')])
         payment_token.invoice_id = invoice
@@ -113,7 +109,6 @@ class PaymentPageWeb(http.Controller):
             # payment_token.invoice_id.write({'amount_gateway': payment_token.invoice_id.amount_residual})
             transaction_id, error = sale_obj.sudo().get_aim_transaction(amount, card, cvv, expiry, invoice.id,
                                                                         surcharge=surcharge)
-            print('', )
             if transaction_id:
                 payment_token.write({'state': 'paid'})
                 return request.render("authorize_net_integration.PaymentResultViewSuccess",
@@ -139,7 +134,6 @@ class PaymentPageWeb(http.Controller):
         """
         edi_record = request.env['payment.token.invoice'].sudo().search(
             [('token', '=', token), ('model', '=', 'invoice')])
-        print('edi_record',edi_record)
         invoice_ids = request.env['account.move'].sudo().search(
             [('partner_id', '=', edi_record.invoice_id.partner_id.id)])
         invoice_ids = invoice_ids.filtered(lambda r: r.state == 'posted' and r.type == 'out_invoice' and r.invoice_payment_state != 'paid')
@@ -182,7 +176,6 @@ class PaymentPageWeb(http.Controller):
         edi_record = request.env['payment.token.invoice'].sudo().search(
             [('invoice_id', '=', int(invoice_id)), ('model', '=', 'invoice')], limit=1)
         invoice_sudo = request.env['account.move'].sudo().browse(int(invoice_id))
-        print('invoice_sudo.state', invoice_sudo.state)
         if invoice_sudo.state == 'posted' and invoice_sudo.invoice_payment_state == 'paid':
             return request.render("authorize_net_integration.PaymentResultView", {'status': 'already'})
         if invoice_sudo.state == 'cancel':

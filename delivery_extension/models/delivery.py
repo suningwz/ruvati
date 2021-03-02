@@ -10,6 +10,8 @@ from odoo.tools import pdf
 from .fedex import FedexRequestShipCollect
 from .ups import UPSRequestRef
 from odoo.addons.delivery_ups.models.ups_request import UPSRequest, Package
+from odoo.addons.delivery_fedex.models.fedex_request import FedexRequest
+
 _logger = logging.getLogger(__name__)
 
 FEDEX_CURR_MATCH = {
@@ -136,9 +138,11 @@ class Provider(models.Model):
                         package_width=packaging.width,
                         package_length=packaging.length,
                         sequence_number=sequence,
-                        po_number='8119',
+                        po_number=order.client_order_ref and order.client_order_ref or po_number,
+#                        po_number='8119',
                         dept_number=dept_number,
-                        reference=picking.display_name,
+                        reference='8119',
+                        invoice_number=order.display_name or False,
                     )
                     else:
                         srm._add_package(
@@ -150,7 +154,8 @@ class Provider(models.Model):
                             sequence_number=sequence,
                             po_number=order.client_order_ref and order.client_order_ref or po_number,
                             dept_number=dept_number,
-                            reference=picking.display_name,
+                            reference='',
+                            invoice_number=order.display_name or False,
                         )
                     srm.set_master_package(net_weight, package_count, master_tracking_id=master_tracking_id)
                     request = srm.process_shipment()
@@ -217,7 +222,8 @@ class Provider(models.Model):
                         package_height=packaging.height,
                         package_width=packaging.width,
                         package_length=packaging.length,
-                        po_number='8119',
+                        po_number=order.client_order_ref and order.client_order_ref or po_number,
+#                        po_number='8119',
                         dept_number=dept_number,
                         reference=picking.display_name,
                     )
@@ -280,11 +286,110 @@ class Provider(models.Model):
                 fedex_documents = [('DocumentFedex.pdf', commercial_invoice)]
                 picking.message_post(body='Fedex Documents', attachments=fedex_documents)
         return res
-        
+
     def fedex_rate_shipment(self, order):
-        res = super(Provider, self).fedex_rate_shipment(order)
+        max_weight = self._fedex_convert_weight(self.fedex_default_packaging_id.max_weight, self.fedex_weight_unit)
+        price = 0.0
+        is_india = order.partner_shipping_id.country_id.code == 'IN' and order.company_id.partner_id.country_id.code == 'IN'
+
+        # Estimate weight of the sales order; will be definitely recomputed on the picking field "weight"
+        est_weight_value = sum([(line.product_id.weight * line.product_uom_qty) for line in order.order_line if
+                                not line.display_type]) or 0.0
+        weight_value = self._fedex_convert_weight(est_weight_value, self.fedex_weight_unit)
+
+        # Some users may want to ship very lightweight items; in order to give them a rating, we round the
+        # converted weight of the shipping to the smallest value accepted by FedEx: 0.01 kg or lb.
+        # (in the case where the weight is actually 0.0 because weights are not set, don't do this)
+        if weight_value > 0.0:
+            weight_value = max(weight_value, 0.01)
+
+        order_currency = order.currency_id
+        superself = self.sudo()
+
+        # Authentication stuff
+        srm = FedexRequest(self.log_xml, request_type="rating", prod_environment=self.prod_environment)
+        srm.web_authentication_detail(superself.fedex_developer_key, superself.fedex_developer_password)
+        srm.client_detail(superself.fedex_account_number, superself.fedex_meter_number)
+
+        # Build basic rating request and set addresses
+        srm.transaction_detail(order.name)
+        srm.shipment_request(
+            self.fedex_droppoff_type,
+            self.fedex_service_type,
+            self.fedex_default_packaging_id.shipper_package_code,
+            self.fedex_weight_unit,
+            self.fedex_saturday_delivery,
+        )
+        pkg = self.fedex_default_packaging_id
+
+        srm.set_currency(_convert_curr_iso_fdx(order_currency.name))
+        srm.set_shipper(order.company_id.partner_id, order.warehouse_id.partner_id)
+        srm.set_recipient(order.partner_shipping_id)
+
+        # if max_weight and weight_value > max_weight:
+        #     total_package = int(weight_value / max_weight)
+        #     last_package_weight = weight_value % max_weight
+        count= 0
+        for line in order.order_line.filtered(lambda line: not line.is_delivery and not line.display_type):
+            for sequence in range(1, int(line.product_uom_qty) + 1):
+                count+=1
+                srm.add_package(
+                    line.product_id.weight,
+                    package_code=line.product_id.default_code,
+                    package_height=line.product_id.height,
+                    package_width=line.product_id.width,
+                    package_length=line.product_id.length,
+                    sequence_number=sequence,
+                    mode='rating',
+                )
+
+        srm.set_master_package(weight_value, count)
+        # Commodities for customs declaration (international shipping)
+        if self.fedex_service_type in ['INTERNATIONAL_ECONOMY', 'INTERNATIONAL_PRIORITY'] or is_india:
+            total_commodities_amount = 0.0
+            commodity_country_of_manufacture = order.warehouse_id.partner_id.country_id.code
+
+            for line in order.order_line.filtered(
+                    lambda l: l.product_id.type in ['product', 'consu'] and not l.display_type):
+                commodity_amount = line.price_reduce_taxinc
+                total_commodities_amount += (commodity_amount * line.product_uom_qty)
+                commodity_description = line.product_id.name
+                commodity_number_of_piece = '1'
+                commodity_weight_units = self.fedex_weight_unit
+                commodity_weight_value = self._fedex_convert_weight(line.product_id.weight * line.product_uom_qty,
+                                                                    self.fedex_weight_unit)
+                commodity_quantity = line.product_uom_qty
+                commodity_quantity_units = 'EA'
+                commodity_harmonized_code = line.product_id.hs_code or ''
+                srm.commodities(_convert_curr_iso_fdx(order_currency.name), commodity_amount, commodity_number_of_piece,
+                                commodity_weight_units, commodity_weight_value, commodity_description,
+                                commodity_country_of_manufacture, commodity_quantity, commodity_quantity_units,
+                                commodity_harmonized_code)
+            srm.customs_value(_convert_curr_iso_fdx(order_currency.name), total_commodities_amount, "NON_DOCUMENTS")
+            srm.duties_payment(order.warehouse_id.partner_id, superself.fedex_account_number,
+                               superself.fedex_duty_payment)
+
+        request = srm.rate()
+
+        warnings = request.get('warnings_message')
+        if warnings:
+            _logger.info(warnings)
+
+        if not request.get('errors_message'):
+            price = self._get_request_price(request['price'], order, order_currency)
+        else:
+            return {'success': False,
+                    'price': 0.0,
+                    'error_message': _('Error:\n%s') % request['errors_message'],
+                    'warning_message': False}
+
         if order.is_ship_collect:
-            res.update({'price': 0.0})
+            price = 0.0
+        return {'success': True,
+                'price': price,
+                'error_message': False,
+                'warning_message': _('Warning:\n%s') % warnings if warnings else False}
+
         return res
 
 
@@ -303,10 +408,8 @@ class Provider(models.Model):
 #        srm.set_recipient(picking.company_id.partner_id)
 
 #        if picking.partner_id.is_ship_collect:
-#            print ('ship collecttttttt')
 #            srm.shipping_charges_payment_ship_collect(picking.shipper_number)
 #        else:
-#            print ('no ship collect')
 #            srm.shipping_charges_payment(superself.fedex_account_number)
 
 #        srm.shipment_label('COMMON2D', self.fedex_label_file_type, self.fedex_label_stock_type, 'TOP_EDGE_OF_TEXT_FIRST', 'SHIPPING_LABEL_FIRST')
@@ -449,16 +552,25 @@ class Provider(models.Model):
                 package_labels = package_labels + [(track_number, label_binary_data)]
             
             carrier_tracking_ref = "+".join([pl[0] for pl in package_labels])
+            label_data = [pl[1] for pl in package_labels]
             #writing tracking reference to respective packages
             for index, package in enumerate(picking.package_ids):
                 package.carrier_tracking_ref = carrier_tracking_ref.split('+')[index]
-            
+                # package.label_data = label_data[index]
+                attachments = [('LabelUPS-%s.%s' % (package.carrier_tracking_ref, 'PNG'), label_data[index])]
+                package.message_post(body="label created", attachments=attachments)
+                return_label_ids = self.env['ir.attachment'].search(
+                    [('res_model', '=', 'stock.quant.package'), ('res_id', '=', package.id),
+                     '|', ('name', 'like', '%s%%' % 'LabelFedex'), ('name', 'like', '%s%%' % 'LabelUPS')],limit=1)
+                package.label_data = return_label_ids.datas
+                package.label_id = return_label_ids.id
+                # print(c)
             logmessage = _("Shipment created into UPS<br/>"
                            "<b>Tracking Numbers:</b> %s<br/>"
                            "<b>Packages:</b> %s") % (carrier_tracking_ref, ','.join(package_names))
-            if self.ups_label_file_type != 'GIF':
-                attachments = [('LabelUPS-%s.%s' % (pl[0], self.ups_label_file_type), pl[1]) for pl in package_labels]
             if self.ups_label_file_type == 'GIF':
+                attachments = [('LabelUPS-%s.%s' % (pl[0], 'PNG'), pl[1]) for pl in package_labels]
+            if self.ups_label_file_type != 'GIF':
                 attachments = [('LabelUPS.pdf', pdf.merge_pdf([pl[1] for pl in package_labels]))]
             picking.message_post(body=logmessage, attachments=attachments)
             shipping_data = {
@@ -469,11 +581,88 @@ class Provider(models.Model):
                 self.ups_get_return_label(picking)
         return res
         
+#    def ups_rate_shipment(self, order):
+#        res = super(Provider, self).ups_rate_shipment(order)
+#        if order.is_ship_collect:
+#            res.update({'price': 0.0})
+#        return res
+
     def ups_rate_shipment(self, order):
-        res = super(Provider, self).ups_rate_shipment(order)
+        superself = self.sudo()
+        srm = UPSRequest(self.log_xml, superself.ups_username, superself.ups_passwd, superself.ups_shipper_number, superself.ups_access_number, self.prod_environment)
+        ResCurrency = self.env['res.currency']
+        max_weight = self.ups_default_packaging_id.max_weight
+        packages = []
+        total_qty = 0
+        total_weight = 0
+        for line in order.order_line.filtered(lambda line: not line.is_delivery and not line.display_type):
+            total_qty += line.product_uom_qty
+            total_weight += line.product_id.weight * line.product_qty
+
+#        if max_weight and total_weight > max_weight:
+#            total_package = int(total_weight / max_weight)
+#            last_package_weight = total_weight % max_weight
+
+#            for seq in range(total_package):
+#                packages.append(Package(self, max_weight, quant_pack=package.packaging_id))
+#            if last_package_weight:
+#                packages.append(Package(self, last_package_weight))
+#        else:
+#            packages.append(Package(self, total_weight))
+        count= 0
+        for line in order.order_line.filtered(lambda line: not line.is_delivery and not line.display_type):
+            for sequence in range(1, int(line.product_uom_qty) + 1):
+                count+=1
+                pack = Package(self, line.product_id.weight)
+                pack.dimension.update({'length': line.product_id.length, 'width': line.product_id.width, 'height': line.product_id.height})
+                packages.append(pack)
+        shipment_info = {
+            'total_qty': total_qty  # required when service type = 'UPS Worldwide Express Freight'
+        }
+
+        if self.ups_cod:
+            cod_info = {
+                'currency': order.partner_id.country_id.currency_id.name,
+                'monetary_value': order.amount_total,
+                'funds_code': self.ups_cod_funds_code,
+            }
+        else:
+            cod_info = None
+
+        check_value = srm.check_required_value(order.company_id.partner_id, order.warehouse_id.partner_id, order.partner_shipping_id, order=order)
+        if check_value:
+            return {'success': False,
+                    'price': 0.0,
+                    'error_message': check_value,
+                    'warning_message': False}
+        ups_service_type = order.ups_service_type or self.ups_default_service_type
+        result = srm.get_shipping_price(
+            shipment_info=shipment_info, packages=packages, shipper=order.company_id.partner_id, ship_from=order.warehouse_id.partner_id,
+            ship_to=order.partner_shipping_id, packaging_type=self.ups_default_packaging_id.shipper_package_code, service_type=ups_service_type,
+            saturday_delivery=self.ups_saturday_delivery, cod_info=cod_info)
+        if result.get('error_message'):
+            return {'success': False,
+                    'price': 0.0,
+                    'error_message': _('Error:\n%s') % result['error_message'],
+                    'warning_message': False}
+
+        if order.currency_id.name == result['currency_code']:
+            price = float(result['price'])
+        else:
+            quote_currency = ResCurrency.search([('name', '=', result['currency_code'])], limit=1)
+            price = quote_currency._convert(
+                float(result['price']), order.currency_id, order.company_id, order.date_order or fields.Date.today())
+
+        if self.ups_bill_my_account and order.ups_carrier_account:
+            # Don't show delivery amount, if ups bill my account option is true
+            price = 0.0
+        
         if order.is_ship_collect:
-            res.update({'price': 0.0})
-        return res
+            price = 0.0
+        return {'success': True,
+                'price': price,
+                'error_message': False,
+                'warning_message': False}
 
 Provider()
 

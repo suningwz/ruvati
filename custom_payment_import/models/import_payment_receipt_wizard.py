@@ -5,7 +5,6 @@ import io
 import tempfile
 
 import xlrd
-from pprint import pprint
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -89,7 +88,6 @@ class ImportPaymentReceiptWizard(models.TransientModel):
                 file_reader = []
                 csv_reader = csv.DictReader(data_file, delimiter=',')
                 file_reader.extend(csv_reader)
-                print("file reader", file_reader)
             except:
                 raise UserError("Invalid file!")
 

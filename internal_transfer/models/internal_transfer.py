@@ -33,6 +33,16 @@ class InternalTransferExtension(models.Model):
         'Scheduled Date', default=lambda self: fields.Datetime.now(),
         states={'done': [('readonly', True)]})
 
+    source_warehouse_id = fields.Many2one(
+        'stock.warehouse', "Source Warehouse",
+        required=True,
+        states={'draft': [('readonly', False)]})
+
+    destination_warehouse_id = fields.Many2one(
+        'stock.warehouse', "Destination Warehouse",
+        required=True,
+        states={'draft': [('readonly', False)]})
+
     location_id = fields.Many2one(
         'stock.location', "Source Location",
         required=True,
@@ -50,6 +60,21 @@ class InternalTransferExtension(models.Model):
     delivery_count = fields.Integer("Deliveries", compute='_compute_deliveries_count')
     receipt_count = fields.Integer("Receipts", compute='_compute_receipt_count')
     date_order = fields.Datetime(string='Date', default=fields.Date.today)
+
+    @api.onchange('source_warehouse_id', 'destination_warehouse_id')
+    def _onchange_location_id(self):
+        res = {}
+        if self.source_warehouse_id :
+            res['value'] = {'location_id': self.source_warehouse_id.lot_stock_id.id}
+            loc_ids = self.env['stock.location'].search(
+                [('id', 'child_of', self.source_warehouse_id.lot_stock_id.id)]).ids
+            res['domain'] = {'location_id': [('id', 'in', loc_ids)]}
+        if self.destination_warehouse_id:
+            res['value'] = {'location_dest_id': self.destination_warehouse_id.lot_stock_id.id}
+            loc_ids = self.env['stock.location'].search(
+                [('id', 'child_of', self.destination_warehouse_id.lot_stock_id.id)]).ids
+            res['domain'] = {'location_dest_id': [('id', 'in', loc_ids)]}
+        return res
 
     def _compute_deliveries_count(self):
         for rec in self:
@@ -94,7 +119,6 @@ class InternalTransferExtension(models.Model):
         return action
 
     def action_transfer(self):
-
         for rec in self:
             source_location = rec.location_id
             dst_location = rec.location_dest_id
@@ -112,29 +136,8 @@ class InternalTransferExtension(models.Model):
                 raise UserError(_('Please configure an Internal Transit Location'))
             if not picking_type_in.warehouse_id.partner_id:
                 raise UserError(_('Please enter the address for the destination warehouse'))
-            incoming_move_vals = []
-            outgoing_move_vals = []
-            for line in rec.transfer_line_ids:
-                product = line.product_id
-                incoming_move_vals.append((0, 0, {
-                    'name': product.name,
-                    'product_id': product.id,
-                    'product_uom': product.uom_id.id,
-                    'picking_type_id': picking_type_in.id,
-                    'product_uom_qty': line.ordered_qty,
-                    'warehouse_id': picking_type_in.warehouse_id.id,
-                    'procure_method': 'make_to_stock',
-                }))
-                outgoing_move_vals.append((0, 0, {
-                    'name': product.name,
-                    'product_id': product.id,
-                    'product_uom': product.uom_id.id,
-                    'product_uom_qty': line.ordered_qty,
-                    'picking_type_id': picking_type_out.id,
-                    'warehouse_id': picking_type_out.warehouse_id.id,
-                    'procure_method': 'make_to_stock',
-                }))
-                # line.is_process=TRue
+            incoming_move_vals = {}
+            outgoing_move_vals = {}
             incoming_picking = self.env['stock.picking'].create({
                 'location_id': internal_transit_loc.id,
                 'location_dest_id': dst_location.id,
@@ -142,7 +145,7 @@ class InternalTransferExtension(models.Model):
                 'origin': reference,
                 'picking_type_id': picking_type_in.id,
                 'internal_transfer_id': rec.id,
-                'move_lines': incoming_move_vals,
+#                'move_lines': incoming_move_vals,
             })
             outgoing_picking = self.env['stock.picking'].create({
                 'location_id': source_location.id,
@@ -152,8 +155,38 @@ class InternalTransferExtension(models.Model):
                 'origin': reference,
                 'picking_type_id': picking_type_out.id,
                 'internal_transfer_id': rec.id,
-                'move_lines': outgoing_move_vals,
+#                'move_lines': outgoing_move_vals,
             })
+            for line in rec.transfer_line_ids:
+                product = line.product_id
+                incoming_move_vals = {
+                    'name': product.name,
+                    'product_id': product.id,
+                    'product_uom': product.uom_id.id,
+                    'picking_type_id': picking_type_in.id,
+                    'product_uom_qty': line.ordered_qty,
+                    'location_id': internal_transit_loc.id,
+                    'location_dest_id': dst_location.id,
+                    'warehouse_id': picking_type_in.warehouse_id.id,
+                    'procure_method': 'make_to_stock',
+                    'picking_id': incoming_picking.id,
+                }
+                incoming_move = self.env['stock.move'].create(incoming_move_vals)
+                outgoing_move_vals = {
+                    'name': product.name,
+                    'product_id': product.id,
+                    'product_uom': product.uom_id.id,
+                    'product_uom_qty': line.ordered_qty,
+                    'picking_type_id': picking_type_out.id,
+                    'location_id': source_location.id,
+                    'location_dest_id': internal_transit_loc.id,
+                    'warehouse_id': picking_type_out.warehouse_id.id,
+                    'procure_method': 'make_to_stock',
+                    'picking_id': outgoing_picking.id,
+                }
+                outgoing_move = self.env['stock.move'].create(outgoing_move_vals)
+                outgoing_move.move_dest_ids = [(4, incoming_move.id)]
+                # line.is_process=TRue
             incoming_picking.action_assign()
             outgoing_picking.action_assign()
         self.write(
@@ -166,6 +199,11 @@ class InternalTransferExtension(models.Model):
         res = super(InternalTransferExtension, self).create(vals)
         return res
 
+    def unlink(self):
+        for rec in self:
+            if rec.state != 'draft':
+                raise UserError("You can only delete a Draft transfer.")
+            return super(InternalTransferExtension, rec).unlink()
 
 InternalTransferExtension()
 
@@ -209,6 +247,12 @@ class ProcurementGroup(models.Model):
         main_warehouse_loc = m_warehouse and m_warehouse.lot_stock_id
         ocean_loc = oc_warehouse and oc_warehouse.lot_stock_id
         s_warehouse_loc = s_warehouse and s_warehouse.lot_stock_id
+        main_warehouse_loc_ids = self.env['stock.location'].search(
+            [('id', 'child_of', main_warehouse_loc.id)]).ids
+        s_warehouse_loc_ids = self.env['stock.location'].search(
+            [('id', 'child_of', s_warehouse_loc.id)]).ids
+        ocean_loc_ids = self.env['stock.location'].search(
+            [('id', 'child_of', ocean_loc.id)]).ids
         total_quantity = 0.0
 
         for procurement in procurements:
@@ -246,13 +290,12 @@ class ProcurementGroup(models.Model):
 
                 for line in stock_quant:
                     if line.get('location_id', False):
-                        if line.get('location_id')[0] == main_warehouse_loc.id:
-                            quant = line.get('quantity', 0)
-                        if line.get('location_id')[0] == ocean_loc.id:
-                            oc_quant = line.get('quantity', 0)
-                        if line.get('location_id')[0] == s_warehouse_loc.id:
-                            sub_quant = line.get('quantity', 0)
-
+                        if line.get('location_id')[0] in main_warehouse_loc_ids:
+                            quant += line.get('quantity', 0)
+                        if line.get('location_id')[0] in ocean_loc_ids:
+                            oc_quant += line.get('quantity', 0)
+                        if line.get('location_id')[0] in s_warehouse_loc_ids:
+                            sub_quant += line.get('quantity', 0)
                 if loc:
                     # if order_point exists then only this loop will excecute.
 
@@ -335,7 +378,11 @@ class ProcurementGroup(models.Model):
         return True
 
     def create_intern_traf_record(self, loc_dest_id, w_loc, description, qty, product):
+        source_warehouse = self.env['stock.warehouse'].search([('code', '=', w_loc.display_name.split('/')[0])])
+        dest_warehouse = self.env['stock.warehouse'].search([('code', '=', loc_dest_id.display_name.split('/')[0])])
         record = self.env['internal.transfer.extension'].create({
+            'source_warehouse_id': source_warehouse and source_warehouse.id,
+            'destination_warehouse_id': dest_warehouse and dest_warehouse.id,
             'location_dest_id': loc_dest_id.id,
             'location_id': w_loc.id,
             'transfer_line_ids': [(0, 0, {'name': description,

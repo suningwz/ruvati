@@ -36,7 +36,6 @@ class StockInternalTransfer(models.TransientModel):
                 new_move._action_confirm()
                 new_move._action_assign()
                 new_move._action_done()
-                print ('newwwwwwwwww', new_move)
                 if new_move.state != 'done':
                     raise UserError(_('Currently mentioned quantities are not available at the location !'))
             picking.update({'is_transfer_done': True})
