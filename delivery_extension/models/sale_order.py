@@ -7,7 +7,7 @@ from odoo import api, fields, models, exceptions, _
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    is_ship_collect = fields.Boolean(string="Ship Collect")
+    is_ship_collect = fields.Boolean(string="Ship Collect", copy=False)
 #    carrier_id = fields.Many2one("delivery.carrier", string="Carrier", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     shipper_number = fields.Char(string="Shipper No.")
     
@@ -18,8 +18,8 @@ class SaleOrder(models.Model):
             self.carrier_id = self.partner_id.carrier_id
             self.shipper_number = self.partner_id.shipper_number
         else:
+            self.carrier_id = self.partner_id.property_delivery_carrier_id.id
             self.is_ship_collect = False
-            self.carrier_id = False
             self.shipper_number = False
 
     @api.onchange('is_ship_collect')
