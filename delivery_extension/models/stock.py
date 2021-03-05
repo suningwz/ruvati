@@ -3,6 +3,8 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+import requests
+import json
 
 
 class StockPicking(models.Model):
@@ -12,6 +14,107 @@ class StockPicking(models.Model):
     shipper_number = fields.Char(string="Shipper No.")
     is_ship_collect = fields.Boolean(string="Ship Collect")
     create_label_on_validate = fields.Boolean(string="Create Label")
+    transaction_id = fields.Char("Transaction ID")
+
+    def send_data(self, data):
+        configuration = self.env['edi.configuration'].search([], limit=1)
+        exchange_token_url = configuration.exchange_token_url
+        uid = configuration.uid
+        password = configuration.password
+        auth_token = configuration.auth_token
+        client_id = configuration.client_id
+        response = requests.get(exchange_token_url,
+                                headers={'UID': uid, 'PWORD': password,
+                                         'AUTHTOKEN': auth_token,
+                                         'CLIENTID': client_id})
+        content = json.loads(response.content)
+        access_token = content['ExchangeTokenResult']['access_token']
+        #post data
+        post_url = configuration.post_url
+        response = requests.post(post_url, data=json.dumps(data), headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+        self.transaction_id = response.content and json.loads(response.content)
+
+    def _get_cartons(self):
+        cartons = []
+        tracking_ref = self.carrier_tracking_ref and self.carrier_tracking_ref.split(',')
+        count = 0
+        for package in self.package_ids:
+            items = []
+            weight = package.shipping_weight
+            for quant in package.quant_ids:
+                items.append({'pack_quantity': quant.quantity,
+                              "line_item_data" : {
+                                    "item_no" : quant.product_id.default_code,
+                                    "qty_ordered": quant.quantity,
+                                }
+                              })
+            cartons.append({
+                "gross_weight": weight,
+                "net_weight": weight,
+                "tracking_number": tracking_ref and tracking_ref[count],
+                "packaging_code": package.name,
+                "items": items
+            })
+            count += 1
+        return cartons
+
+    def action_done(self):
+        res = super(StockPicking, self).action_done()
+        for rec in self:
+            if not rec.sale_id.edi_order:
+                break
+            invoice_partner_id = rec.sale_id.partner_invoice_id
+            shipment_data = {
+                "BSISerObjects.bsishipments": {
+
+                    "pro_number": rec.sale_id.pro_number,
+                    "bill_of_lading_number": rec.sale_id.bill_of_lading_number,
+                    "ship_via_description": rec.carrier_id.name,
+                    "orders": [{
+                        'order_info': {
+                            'order_date': rec.sale_id.date_order.strftime('%Y-%m-%d'),
+                            'customer_number': rec.sale_id.customer_id,
+                            "ship_date": rec.scheduled_date.strftime('%Y-%m-%d'),
+                            'ship_to_address': {
+                                "name": rec.partner_id.name,
+                                "address_1": rec.partner_id.street,
+                                "address_2": rec.partner_id.street2,
+                                "city": rec.partner_id.city,
+                                "state": rec.partner_id.state_id.code,
+                                "zip": rec.partner_id.zip,
+                                "country": rec.partner_id.country_id.code,
+
+                            },
+                            'billing_address': {
+                                "name": invoice_partner_id.name,
+                                "address_1": invoice_partner_id.street,
+                                "address_2": invoice_partner_id.street2,
+                                "city": invoice_partner_id.city,
+                                "state": invoice_partner_id.state_id.code,
+                                "zip": invoice_partner_id.zip,
+                                "country": invoice_partner_id.country_id.code,
+
+                            },
+                            'ship_from_address': {
+                                "name": rec.company_id.name,
+                                "address_1": rec.company_id.street,
+                                "address_2": rec.company_id.street2,
+                                "city": rec.company_id.city,
+                                "state": rec.company_id.state_id.code,
+                                "zip": rec.company_id.zip,
+                                "country": rec.company_id.country_id.code,
+
+                            },
+                            'cartons': rec._get_cartons()
+                        }
+
+                    }]
+                }
+            }
+            rec.send_data(shipment_data)
+
+        return res
+
     
 #    @api.depends('picking_type_id')
 #    def _compute_to_create_label(self):
