@@ -32,7 +32,7 @@ class AccountMove(models.Model):
     def _get_tracking_numbers(self):
         tracking = []
         sale_order = self.env['sale.order'].search([('name', '=', self.invoice_origin)])
-        picking_ids = sale_order.picking_ids.filtered(lambda pick: pick.location_dest_id.id == self.env.ref('stock.location_pack_zone').id)
+        picking_ids = sale_order.picking_ids
         carrier_id = picking_ids and picking_ids[0].carrier_id
         shipping_id = picking_ids and picking_ids[0].partner_id
         for picking in picking_ids:
@@ -52,7 +52,7 @@ class AccountMove(models.Model):
                 'unit_price': line.price_unit,
                 'net_price': line.price_subtotal,
                 'unit_of_measure': "EA",
-                'customer_item_no': customer_item and customer_item.sku_product_id,
+                'customer_item_no': customer_item and customer_item.sku_product_id or '',
                 'item_description_1': line.name
             })
         return lines

@@ -11,10 +11,13 @@ class SaleOrder(models.Model):
     is_amazon_order = fields.Boolean("Is Amazon order")
     
     def set_delivery_line(self, carrier, amount):
+        self.carrier_id = carrier.id
+        for pick in self.picking_ids:
+            pick.carrier_id = carrier.id
         if self.is_amazon_order:
-            self.carrier_id = carrier.id
-            for pick in self.picking_ids:
-                pick.carrier_id = carrier.id
+#            self.carrier_id = carrier.id
+#            for pick in self.picking_ids:
+#                pick.carrier_id = carrier.id
             return
         return super(SaleOrder, self).set_delivery_line(carrier, amount)
 

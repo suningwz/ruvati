@@ -25,6 +25,12 @@ function isChildOf(locationParent, locationChild) {
 var QualityCheckClientAction = require('stock_barcode.ClientAction');
 
 var PickingQualityCheckClientAction = QualityCheckClientAction.include({
+
+    init: function (parent, action) {
+        this._super.apply(this, arguments);
+        this.is_location_scanned = false;
+    },
+
 //    this._super.apply(this, arguments);
 
     /**
@@ -229,10 +235,10 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 ) {
                 if (this.actionParams.model === 'stock.picking') {
                     if (picking_type_code === 'internal'){
-                    line.qty_done = params.product.qty || 1;
+                        line.qty_done = params.product.qty || 1;
                     }
                     else{
-                    line.qty_done += params.product.qty || 1;
+                        line.qty_done += params.product.qty || 1;
                     }
 
                 } else if (this.actionParams.model === 'stock.inventory') {
@@ -298,6 +304,12 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         var allowScan = false;
         var product = this._isProduct(barcode);
         if (product) {
+            if (self.currentState.name.includes('PICK') && !this.is_location_scanned) {
+                errorMessage = _t("You are expected to scan a source location before scanning a product");
+                return Promise.reject(errorMessage);
+            }
+            self.is_location_scanned = false;
+            
             if (product.tracking !== 'none') {
                 this.currentStep = 'lot';
             }
@@ -308,9 +320,8 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 'method': 'get_all_picking_products',
                 'args': [self.actionParams.pickingId],
             }).then(function (result) {
-                
-                
             var res = self._incrementLines({'product': product, 'barcode': barcode, 'picking_product': result});
+            
             // throws an error if the scanned product is not upto this picking.
             if (res.discard) {
                 errorMessage = _t("You are expected to scan products belongs to this picking");
@@ -400,6 +411,70 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             });
         }
     },
+    
+    /**
+     * Handle what needs to be done when a source location is scanned.
+     *
+     * @param {string} barcode scanned barcode
+     * @param {Object} linesActions
+     * @returns {Promise}
+     */
+    _step_source: function (barcode, linesActions) {
+        var self = this;
+        this.currentStep = 'source';
+        var errorMessage;
+
+        /* Bypass this step in the following cases:
+           - the picking is a receipt
+           - the multi location group isn't active
+        */
+        var sourceLocation = this.locationsByBarcode[barcode];
+        if (sourceLocation  && ! (this.mode === 'receipt' || this.mode === 'no_multi_locations')) {
+            const locationId = this._getLocationId();
+            if (locationId && !isChildOf(locationId, sourceLocation)) {
+                errorMessage = _t('This location is not a child of the main location.');
+                return Promise.reject(errorMessage);
+            } else {
+                // There's nothing to do on the state here, just mark `this.scanned_location`.
+                linesActions.push([this.linesWidget.highlightLocation, [true]]);
+                if (this.actionParams.model === 'stock.picking') {
+                    linesActions.push([this.linesWidget.highlightDestinationLocation, [false]]);
+                }
+                this.scanned_location = sourceLocation;
+                this.is_location_scanned = true;
+                this.currentStep = 'product';
+                return Promise.resolve({linesActions: linesActions});
+            }
+        }
+        /* Implicitely set the location source in the following cases:
+            - the user explicitely scans a product
+            - the user explicitely scans a lot
+            - the user explicitely scans a package
+        */
+        // We already set the scanned_location even if we're not sure the
+        // following steps will succeed. They need scanned_location to work.
+        this.scanned_location = {
+            id: this.pages ? this.pages[this.currentPageIndex].location_id : this.currentState.location_id.id,
+            display_name: this.pages ? this.pages[this.currentPageIndex].location_name : this.currentState.location_id.display_name,
+        };
+        linesActions.push([this.linesWidget.highlightLocation, [true]]);
+        if (this.actionParams.model === 'stock.picking') {
+            linesActions.push([this.linesWidget.highlightDestinationLocation, [false]]);
+        }
+
+        return this._step_product(barcode, linesActions).then(function (res) {
+            return Promise.resolve({linesActions: res.linesActions});
+        }, function (specializedErrorMessage) {
+            delete self.scanned_location;
+            self.currentStep = 'source';
+            if (specializedErrorMessage){
+                return Promise.reject(specializedErrorMessage);
+            }
+            var errorMessage = _t('You are expected to scan a source location.');
+            return Promise.reject(errorMessage);
+        });
+    },
+    
     
         /**
      * Handle what needs to be done when a destination location is scanned.

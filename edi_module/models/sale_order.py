@@ -17,6 +17,7 @@ class SaleOrder(models.Model):
     transportation_method_code = fields.Char("Transportation Code")
     ship_via_description = fields.Selection([('UPS', 'UPS'), ('Fedex', 'Fedex')], string="Ship Via")
     order_shipment_status = fields.Selection([('P', 'P')], string="Shipment Status")
+    order_card_id = fields.Char('Order Card ID')
 
     def order_to_review(self):
         if all(line.price_unit == line.sale_approved_price for line in self.order_line) and self.state == 'to_review':
@@ -32,6 +33,7 @@ class SaleOrder(models.Model):
 
     def process_order_data(self, order_data):
         data = order_data.get('PullSalesOrdersOutResult', {})
+
         if data:
             ship_to_code = data.get('CardCode', False)
             doc_date = data.get('DocDate', False)
@@ -64,22 +66,23 @@ class SaleOrder(models.Model):
                     'product_uom_qty': quantity
 
                 }))
+            carrier = self.env['delivery.carrier'].search(
+                [('delivery_type', '=', 'ups'), ('ups_default_service_type', '=', '03')])
+
             order_id = self.env['sale.order'].create({
                 'partner_id': partner_id.id,
                 'customer_id': ship_to_code,
                 'doc_date': doc_date,
+                'order_card_id': self._context.get('order_card_id', ''),
                 'doc_due_date': doc_due_date,
                 'edi_order': True,
+                'carrier_id': carrier.id,
                 'order_line': line_list
             })
 
             return order_id
 
         return False
-
-    def action_confirm(self):
-        res = super(SaleOrder, self).action_confirm()
-        return res
 
     def _cron_pull_edi_orders(self):
         configuration = self.env['edi.configuration'].search([], limit=1)
@@ -104,9 +107,11 @@ class SaleOrder(models.Model):
                 order_list = list_data.get('PullSalesOrdersOutListResult', [])
                 for order_id in order_list:
                     order_id_url = order_url + str(order_id)
+                    if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
+                        continue
                     order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
                     order_data = json.loads(order_response.content)
-                    order_id = self.process_order_data(order_data)
+                    order_id = self.with_context({'order_card_id': str(order_id)}).process_order_data(order_data)
 
 
 class SaleOrderLine(models.Model):

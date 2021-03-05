@@ -136,6 +136,7 @@ class AmazonAccount(models.Model):
             amazon_product = self.env.ref('sale_amazon.%s' % 'default_product', raise_if_not_found=False)
             amazon_product_id = amazon_product and amazon_product.id or 0
             amazon_product_context = False
+            carrier = False
             for line in order_lines_vals:
                 product_id = line.get('product_id')
                 if amazon_product_id and amazon_product_id == product_id:
@@ -145,6 +146,7 @@ class AmazonAccount(models.Model):
             if fulfillment_channel == 'AFN':
                 warehouse_id = self.warehouse_id.id
             else:
+                carrier = self.env['delivery.carrier'].search([('delivery_type', '=', 'ups'), ('ups_default_service_type', '=', '03')])
                 warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
                 if warehouse:
                     warehouse_id = warehouse.id
@@ -163,6 +165,7 @@ class AmazonAccount(models.Model):
                 'company_id': self.company_id.id,
                 'user_id': self.user_id.id,
                 'team_id': self.team_id.id,
+                'carrier_id': carrier and carrier.id or False,
                 'is_amazon_order': True,
                 'warehouse_id': warehouse_id,
                 'client_order_ref': amazon_order_ref,
