@@ -1,6 +1,9 @@
 from odoo import models, fields, api
 import requests
 import json
+import logging
+_logger = logging.getLogger(__name__)
+from datetime import datetime
 
 
 class SaleOrder(models.Model):
@@ -46,22 +49,25 @@ class SaleOrder(models.Model):
             for line in item_lines:
                 name = line.get('ItemDescription', False)
                 item_code = line.get('ItemCode', False)
-                price = line.get('Price', False)
+                price = line.get('UnitPrice', False)
                 quantity = line.get('Quantity', False)
                 ship_date = line.get('ShipDate', False)
                 unit_price = 0
                 if price and quantity:
                     unit_price = float(price)
                 edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
-                                                              ('customer_id', '=', ship_to_code)], limit=1)
+                                                              ('customer_id', '=', '100')], limit=1)
+
                 if not edi_record:
                     return False
-
+                # product_id = self.env['product.product'].search([('default_code','=',item_code)], limit=1)
+                # if not product_id:
+                #     return
                 line_list.append((0, 0, {
                     'name': name,
                     'product_id': edi_record.product_id.id,
-                    'sale_approved_price': edi_record.sale_approved_price,
-                    'ship_date': ship_date,
+                    # 'sale_approved_price': edi_record.sale_approved_price,
+                    'ship_date': ship_date and datetime.strptime(ship_date, '%m/%d/%Y'),
                     'price_unit': unit_price,
                     'product_uom_qty': quantity
 
@@ -72,9 +78,9 @@ class SaleOrder(models.Model):
             order_id = self.env['sale.order'].create({
                 'partner_id': partner_id.id,
                 'customer_id': ship_to_code,
-                'doc_date': doc_date,
+                'doc_date': doc_date and datetime.strptime(doc_date, '%m/%d/%Y'),
                 'order_card_id': self._context.get('order_card_id', ''),
-                'doc_due_date': doc_due_date,
+                'doc_due_date': doc_due_date and datetime.strptime(doc_due_date, '%m/%d/%Y'),
                 'edi_order': True,
                 'carrier_id': carrier.id,
                 'order_line': line_list
@@ -106,10 +112,14 @@ class SaleOrder(models.Model):
                 list_data = json.loads(order_list_response.content)
                 order_list = list_data.get('PullSalesOrdersOutListResult', [])
                 for order_id in order_list:
+                    print("...............",order_id)
                     order_id_url = order_url + str(order_id)
                     if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
                         continue
-                    order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+                    try:
+                        order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+                    except Exception as e:
+                        continue
                     order_data = json.loads(order_response.content)
                     order_id = self.with_context({'order_card_id': str(order_id)}).process_order_data(order_data)
 
