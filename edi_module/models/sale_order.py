@@ -53,7 +53,7 @@ class SaleOrder(models.Model):
                 if price and quantity:
                     unit_price = float(price)
                 edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
-                                                              ('customer_id', '=', ship_to_code)], limit=1)
+                                                              ('customer_id', '=', '100')], limit=1)
                 if not edi_record:
                     return False
 
@@ -106,10 +106,14 @@ class SaleOrder(models.Model):
                 list_data = json.loads(order_list_response.content)
                 order_list = list_data.get('PullSalesOrdersOutListResult', [])
                 for order_id in order_list:
+                    print("...............",order_id)
                     order_id_url = order_url + str(order_id)
                     if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
                         continue
-                    order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+                    try:
+                        order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+                    except Exception as e:
+                        continue
                     order_data = json.loads(order_response.content)
                     order_id = self.with_context({'order_card_id': str(order_id)}).process_order_data(order_data)
 
