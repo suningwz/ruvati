@@ -1,6 +1,9 @@
 from odoo import models, fields, api
 import requests
 import json
+import logging
+_logger = logging.getLogger(__name__)
+from datetime import datetime
 
 
 class SaleOrder(models.Model):
@@ -54,6 +57,7 @@ class SaleOrder(models.Model):
                     unit_price = float(price)
                 edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
                                                               ('customer_id', '=', '100')], limit=1)
+
                 if not edi_record:
                     return False
 
@@ -61,7 +65,7 @@ class SaleOrder(models.Model):
                     'name': name,
                     'product_id': edi_record.product_id.id,
                     'sale_approved_price': edi_record.sale_approved_price,
-                    'ship_date': ship_date,
+                    'ship_date': ship_date and datetime.strptime(ship_date, '%m/%d/%Y'),
                     'price_unit': unit_price,
                     'product_uom_qty': quantity
 
@@ -72,9 +76,9 @@ class SaleOrder(models.Model):
             order_id = self.env['sale.order'].create({
                 'partner_id': partner_id.id,
                 'customer_id': ship_to_code,
-                'doc_date': doc_date,
+                'doc_date': doc_date and datetime.strptime(doc_date, '%m/%d/%Y'),
                 'order_card_id': self._context.get('order_card_id', ''),
-                'doc_due_date': doc_due_date,
+                'doc_due_date': doc_due_date and datetime.strptime(doc_due_date, '%m/%d/%Y'),
                 'edi_order': True,
                 'carrier_id': carrier.id,
                 'order_line': line_list
