@@ -49,22 +49,24 @@ class SaleOrder(models.Model):
             for line in item_lines:
                 name = line.get('ItemDescription', False)
                 item_code = line.get('ItemCode', False)
-                price = line.get('Price', False)
+                price = line.get('UnitPrice', False)
                 quantity = line.get('Quantity', False)
                 ship_date = line.get('ShipDate', False)
                 unit_price = 0
                 if price and quantity:
                     unit_price = float(price)
-                edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
-                                                              ('customer_id', '=', '100')], limit=1)
-
-                if not edi_record:
-                    return False
-
+                # edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
+                #                                               ('customer_id', '=', '100')], limit=1)
+                #
+                # if not edi_record:
+                #     return False
+                product_id = self.env['product.product'].search([('default_code','=',item_code)], limit=1)
+                if not product_id:
+                    return
                 line_list.append((0, 0, {
                     'name': name,
-                    'product_id': edi_record.product_id.id,
-                    'sale_approved_price': edi_record.sale_approved_price,
+                    'product_id': product_id.id,
+                    # 'sale_approved_price': edi_record.sale_approved_price,
                     'ship_date': ship_date and datetime.strptime(ship_date, '%m/%d/%Y'),
                     'price_unit': unit_price,
                     'product_uom_qty': quantity
