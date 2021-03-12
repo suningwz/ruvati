@@ -5,5 +5,12 @@
             <span class="o_hidden o_scan_message o_scan_message_qc_already_done"><span class="fa fa-exclamation-triangle"/>This order is already QC passed</span>
             <span class="o_hidden o_scan_message o_scan_message_qc_already_cancelled"><span class="fa fa-exclamation-triangle"/>This QC is already cancelled</span>
         </t>
+<!--        <t t-jquery="span.o_scan_message_scan_products" t-operation="before">-->
+<!--        <input type="text" class="o_input" id="b_code"/>-->
+<!--        <input type="button" id="b_submit" value="submit"/>-->
+<!--    </t>-->
     </t>
+
+
+
 </templates>

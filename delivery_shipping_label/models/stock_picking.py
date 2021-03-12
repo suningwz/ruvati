@@ -4,6 +4,7 @@ from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
 import io
 from odoo.exceptions import UserError, ValidationError
+from zplgrf import GRF
 
 
 class StockPicking(models.Model):
@@ -164,6 +165,13 @@ class StockPicking(models.Model):
         packing_slips = [packing_slip]
         delivery_type = self.carrier_id.delivery_type
         merged_pdf = self.with_context(delivery_type=delivery_type).merge_pdfs(packing_slips, return_labels)
+        # with open('LabelFedex.PDF', 'rb') as pdf:
+        #     pages = GRF.from_pdf(pdf.read(), 'DEMO', center_of_pixel=False)
+        # grf_merged = ''
+        # for grf in pages:
+        #     grf.optimise_barcodes()
+        #     grf_merged += grf.to_zpl()
+        # str.encode(grf_merged)
         attachment_id = self.env['ir.attachment'].create({
             'name': "Shipping_Label.pdf",
             'type': 'binary',

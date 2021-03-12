@@ -10,6 +10,14 @@ class SaleOrder(models.Model):
     is_ship_collect = fields.Boolean(string="Ship Collect", copy=False)
 #    carrier_id = fields.Many2one("delivery.carrier", string="Carrier", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     shipper_number = fields.Char(string="Shipper No.")
+
+    def message_notify(self, *,
+                       partner_ids=False, parent_id=False, model=False, res_id=False,
+                       author_id=None, email_from=None, body='', subject=False, **kwargs):
+        """ Shortcut allowing to notify partners of messages that shouldn't be
+        displayed on a document. It pushes notifications on inbox or by email depending
+        on the user configuration, like other notifications. """
+        return
     
     @api.onchange('partner_id')
     def ship_collect_onchange_partner(self):
