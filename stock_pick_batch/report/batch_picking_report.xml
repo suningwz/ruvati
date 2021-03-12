@@ -66,7 +66,7 @@
                                                 </td>
                                                 <td style="float:right;">
                                                     <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;quiet=%s' % ('Code128', pick['name'], 400, 100, 0)"
-                                                         style="float:right;width:300px;height:50px;color:black;"
+                                                         style="float:right;width:300px;height:70px"
                                                          alt="Barcode"/>
                                                 </td>
                                             </tr>
@@ -125,7 +125,7 @@
                                             <tr>
                                                 <td style="float:right;">
                                                     <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;quiet=%s' % ('Code128', pick['name'], 400, 100, 0)"
-                                                         style="float:right;width:300px;height:50px;color:black;"
+                                                         style="float:right;width:300px;height:70px"
                                                          alt="Barcode"/>
                                                 </td>
                                             </tr>
