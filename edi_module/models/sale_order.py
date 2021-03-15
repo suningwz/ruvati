@@ -74,7 +74,7 @@ class SaleOrder(models.Model):
                 if price and quantity:
                     unit_price = float(price)
                 edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
-                                                              ('customer_id', '=', '100')], limit=1)
+                                                              ('customer_id', '=', ship_to_code)], limit=1)
 
                 if not edi_record:
                     return False
@@ -120,6 +120,9 @@ class SaleOrder(models.Model):
                                          'CLIENTID': client_id})
         content = json.loads(response.content)
         access_token = content['ExchangeTokenResult']['access_token']
+        # refresh = requests.get('https://restsvc1.bsiedi.com/BSIEDIREST.svc/RefreshToken',headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+        # refresh_content = json.loads(refresh.content)
+        # access_token = refresh_content['RefreshTokenResult']['access_token']
         if configuration.mode == 'production':
             production_list_url = configuration.order_list_url
             order_url = configuration.order_url
