@@ -63,11 +63,6 @@ class SaleOrder(models.Model):
                                                                   })
             if not partner_id:
                 return False
-            sale_order_id = self.env['sale.order'].search([('order_card_id', '=', self._context.get('order_card_id', ''))],limit=1)
-            if sale_order_id:
-                sale_order_id.partner_shipping_id = partner_ship_id and partner_ship_id.id
-                sale_order_id.action_confirm()
-                return True
             line_list = []
             for line in item_lines:
                 name = line.get('ItemDescription', False)
@@ -105,6 +100,8 @@ class SaleOrder(models.Model):
                 'carrier_id': carrier.id,
                 'order_line': line_list
             })
+            if order_id:
+                order_id.action_confirm()
 
             return order_id
 
@@ -133,8 +130,8 @@ class SaleOrder(models.Model):
                 order_list = list_data.get('PullSalesOrdersOutListResult', [])
                 for order_id in order_list:
                     order_id_url = order_url + str(order_id)
-                    # if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
-                    #     continue
+                    if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
+                        continue
                     try:
                         order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
                     except Exception as e:
