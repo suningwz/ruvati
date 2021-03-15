@@ -50,7 +50,17 @@ class SaleOrder(models.Model):
             address = data.get('Address', False)
             state = self.env['res.country.state'].search([('code', '=ilike', ship_to_state)],limit=1)
             partner_ship_id = False
-
+            sale_id = self.env['sale.order'].search([('order_card_id', '=', str(self._context.get('order_card_id')))],limit=1)
+            if sale_id:
+                sale_id.is_ship_collect = partner_id.is_ship_collect,
+                sale_id.shipper_number = partner_id.is_ship_collect and partner_id.shipper_number or '',
+                for pick in sale_id.picking_ids:
+                    if not pick.carrier_id:
+                        continue
+                    pick.is_ship_collect = partner_id.is_ship_collect,
+                    pick.shipper_number = partner_id.is_ship_collect and partner_id.shipper_number or '',
+                print("sa..................",sale_id)
+            return
             if card_name and address and state and ship_to_city and partner_id:
                 partner_ship_id = self.env['res.partner'].create({'name': card_name,
                                                                   'street': address,
@@ -97,7 +107,9 @@ class SaleOrder(models.Model):
                 'order_card_id': self._context.get('order_card_id', ''),
                 'doc_due_date': doc_due_date and datetime.strptime(doc_due_date, '%m/%d/%Y'),
                 'edi_order': True,
-                'carrier_id': carrier.id,
+                'is_ship_collect': partner_id.is_ship_collect,
+                'shipper_number': partner_id.is_ship_collect and partner_id.shipper_number or '',
+                'carrier_id': partner_id.carrier_id.id or carrier.id,
                 'order_line': line_list
             })
             if order_id:
@@ -133,8 +145,8 @@ class SaleOrder(models.Model):
                 order_list = list_data.get('PullSalesOrdersOutListResult', [])
                 for order_id in order_list:
                     order_id_url = order_url + str(order_id)
-                    if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
-                        continue
+                    # if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
+                    #     continue
                     try:
                         order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
                     except Exception as e:

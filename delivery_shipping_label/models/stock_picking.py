@@ -4,7 +4,7 @@ from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
 import io
 from odoo.exceptions import UserError, ValidationError
-# from zplgrf import GRF
+#from zplgrf import GRF
 
 
 class StockPicking(models.Model):
