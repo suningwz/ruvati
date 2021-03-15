@@ -36,15 +36,38 @@ class SaleOrder(models.Model):
 
     def process_order_data(self, order_data):
         data = order_data.get('PullSalesOrdersOutResult', {})
-
         if data:
             ship_to_code = data.get('CardCode', False)
             doc_date = data.get('DocDate', False)
             doc_due_date = data.get('DocDueDate', False)
             item_lines = data.get('DocumentLines', False)
             partner_id = self.env['res.partner'].search([('customer_id', '=', ship_to_code)], limit=1)
+            card_name = data.get('CardName', False)
+            AddressExtension = data.get('AddressExtension', False)
+            ship_to_state = AddressExtension.get('ShipToState', False)
+            ship_to_city = AddressExtension.get('ShipToCity', False)
+            ship_to_zip = AddressExtension.get('ShipToZipCode', False)
+            address = data.get('Address', False)
+            state = self.env['res.country.state'].search([('code', '=ilike', ship_to_state)],limit=1)
+            partner_ship_id = False
+
+            if card_name and address and state and ship_to_city and partner_id:
+                partner_ship_id = self.env['res.partner'].create({'name': card_name,
+                                                                  'street': address,
+                                                                  'city': ship_to_city,
+                                                                  'state_id': state.id,
+                                                                  'country_id':state.country_id.id,
+                                                                  'zip': ship_to_zip,
+                                                                  'parent_id': partner_id.id,
+                                                                  'type': 'delivery'
+                                                                  })
             if not partner_id:
                 return False
+            sale_order_id = self.env['sale.order'].search([('order_card_id', '=', self._context.get('order_card_id', ''))],limit=1)
+            if sale_order_id:
+                sale_order_id.partner_shipping_id = partner_ship_id and partner_ship_id.id
+                sale_order_id.action_confirm()
+                return True
             line_list = []
             for line in item_lines:
                 name = line.get('ItemDescription', False)
@@ -55,18 +78,14 @@ class SaleOrder(models.Model):
                 unit_price = 0
                 if price and quantity:
                     unit_price = float(price)
-                # edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
-                #                                               ('customer_id', '=', '100')], limit=1)
-                #
-                # if not edi_record:
-                #     return False
-                product_id = self.env['product.product'].search([('default_code','=',item_code)], limit=1)
-                if not product_id:
-                    return
+                edi_record = self.env['edi.customer'].search([('sku_product_id', '=', item_code),
+                                                              ('customer_id', '=', '100')], limit=1)
+
+                if not edi_record:
+                    return False
                 line_list.append((0, 0, {
                     'name': name,
-                    'product_id': product_id.id,
-                    # 'sale_approved_price': edi_record.sale_approved_price,
+                    'product_id': edi_record.product_id.id,
                     'ship_date': ship_date and datetime.strptime(ship_date, '%m/%d/%Y'),
                     'price_unit': unit_price,
                     'product_uom_qty': quantity
@@ -77,6 +96,7 @@ class SaleOrder(models.Model):
 
             order_id = self.env['sale.order'].create({
                 'partner_id': partner_id.id,
+                'partner_shipping_id': partner_ship_id and partner_ship_id.id or partner_id.id,
                 'customer_id': ship_to_code,
                 'doc_date': doc_date and datetime.strptime(doc_date, '%m/%d/%Y'),
                 'order_card_id': self._context.get('order_card_id', ''),
@@ -112,10 +132,9 @@ class SaleOrder(models.Model):
                 list_data = json.loads(order_list_response.content)
                 order_list = list_data.get('PullSalesOrdersOutListResult', [])
                 for order_id in order_list:
-                    print("...............",order_id)
                     order_id_url = order_url + str(order_id)
-                    if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
-                        continue
+                    # if self.env['sale.order'].search([('order_card_id', '=', str(order_id))]):
+                    #     continue
                     try:
                         order_response = requests.get(order_id_url, headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
                     except Exception as e:
