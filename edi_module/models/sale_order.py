@@ -53,13 +53,13 @@ class SaleOrder(models.Model):
             sale_id = self.env['sale.order'].search([('order_card_id', '=', str(self._context.get('order_card_id')))],limit=1)
             if sale_id:
                 sale_id.is_ship_collect = partner_id.is_ship_collect,
-                sale_id.shipper_number = partner_id.is_ship_collect and partner_id.shipper_number or '',
+                sale_id.shipper_number = 'T3301T',
                 for pick in sale_id.picking_ids:
                     if not pick.carrier_id:
                         continue
                     pick.is_ship_collect = partner_id.is_ship_collect,
-                    pick.shipper_number = partner_id.is_ship_collect and partner_id.shipper_number or '',
-                print("sa..................",sale_id)
+                    pick.shipper_number = 'T3301T',
+
             return
             if card_name and address and state and ship_to_city and partner_id:
                 partner_ship_id = self.env['res.partner'].create({'name': card_name,
