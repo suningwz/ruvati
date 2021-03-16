@@ -11,7 +11,7 @@ class StockPickingBatch(models.Model):
 
     reference = fields.Char(string="Reference")
     #    warehouse_id = fields.Many2one('stock.warehouse', string="Pick From", required=True)
-    picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True, domain="['|','&',('sequence_code','in',('PICK','IN')),('warehouse_id.code','=','WH1'),'&',('sequence_code','=','OUT'),('warehouse_id.code','=','WH2')]")
+    picking_type_id = fields.Many2one('stock.picking.type', string="Picking Type", required=True, domain="['|','&',('sequence_code','in',('PICK','IN','QC')),('warehouse_id.code','=','WH1'),'&',('sequence_code','=','OUT'),('warehouse_id.code','=','WH2')]")
 
     picking_ids = fields.One2many(
         'stock.picking', 'batch_id', string='Transfers',
@@ -62,7 +62,7 @@ class StockPickingBatch(models.Model):
         picking_without_qty_done = self.env['stock.picking']
         picking_without_carrier = self.env['stock.picking']
         for picking in pickings:
-            if not picking.carrier_id:
+            if not picking.carrier_id and picking.picking_type_id != picking.picking_type_id.warehouse_id.pack_type_id:
                 picking_without_carrier |= picking
             elif all([x.qty_done == 0.0 for x in picking.move_line_ids]):
                 # If no lots when needed, raise error
@@ -71,8 +71,14 @@ class StockPickingBatch(models.Model):
                     for ml in picking.move_line_ids:
                         if ml.product_id.tracking != 'none':
                             raise UserError(_('Some products require lots/serial numbers.'))
-                # Check if we need to set some qty done.
-                picking_without_qty_done |= picking
+                # set qty done for QC step.           
+                if picking_type == picking.picking_type_id.warehouse_id.pack_type_id and picking.state == 'assigned':
+                    for line in picking.move_line_ids:
+                        line.qty_done = line.product_uom_qty
+                    picking.button_validate()
+                else:
+                    # Check if we need to set some qty done.
+                    picking_without_qty_done |= picking
             elif picking._check_backorder():
                 picking_to_backorder |= picking
             else:

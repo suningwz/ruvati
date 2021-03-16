@@ -38,13 +38,14 @@
         </record>
 
 
-        <!--inherited filter for adding transaction_id in filter-->
+        <!--inherited filter for adding transaction_id and customer address in filter-->
         <record id="sale_filter_inherited_authorize" model="ir.ui.view">
             <field name="name">sale.order.filter.inherit.authorize</field>
             <field name="model">sale.order</field>
             <field name="inherit_id" ref="sale.view_sales_order_filter"/>
             <field name="arch" type="xml">
                 <field name="partner_id" position="after">
+                    <field name="partner_shipping_id" string="Deliver To" operator="child_of" filter_domain="['|', ('partner_shipping_id.phone', 'ilike', self), '|', ('partner_shipping_id.street', 'ilike', self), '|', ('partner_shipping_id.city', 'ilike', self), '|', ('partner_shipping_id.zip', 'ilike', self), ('partner_shipping_id.state_id', 'ilike', self)]"/>
                     <field name="transaction_id" string="Transaction ID"/>
                 </field>
 

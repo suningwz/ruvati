@@ -2,7 +2,7 @@
 <odoo>
     <data>
         <record id="paperformat_batch_transfer_report" model="report.paperformat">
-            <field name="name">Batch Report A4 without borders</field>
+            <field name="name">Batch Report Paper Format</field>
             <field name="default" eval="False"/>
             <field name="format">A4</field>
             <field name="orientation">Portrait</field>

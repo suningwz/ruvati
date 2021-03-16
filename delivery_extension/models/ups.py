@@ -61,12 +61,16 @@ class UPSRequestRef(UPSRequest):
             shipment.Package.append(package)
 
         shipment.Shipper = self.factory_ns2.ShipperType()
+        sale_order_id = kwargs.get('order', False)
+        postal_code = shipper.zip
+        if sale_order_id and sale_order_id.is_ship_collect:
+            postal_code = sale_order_id.partner_id.zip
         shipment.Shipper.Address = self.factory_ns2.ShipAddressType()
         shipment.Shipper.AttentionName = (shipper.name or '')[:35]
         shipment.Shipper.Name = (shipper.parent_id.name or shipper.name or '')[:35]
         shipment.Shipper.Address.AddressLine = [l for l in [shipper.street or '', shipper.street2 or ''] if l]
         shipment.Shipper.Address.City = shipper.city or ''
-        shipment.Shipper.Address.PostalCode = shipper.zip or ''
+        shipment.Shipper.Address.PostalCode = postal_code or ''
         shipment.Shipper.Address.CountryCode = shipper.country_id.code or ''
         if shipper.country_id.code in ('US', 'CA', 'IE'):
             shipment.Shipper.Address.StateProvinceCode = shipper.state_id.code or ''

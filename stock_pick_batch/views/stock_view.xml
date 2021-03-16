@@ -25,6 +25,9 @@
                     <button name="generate_shipping_label" type="object" string="Print Shipping label" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
                     
                 </xpath>
+                <xpath expr="//field[@name='picking_ids']/tree/field[@name='location_id']" position="after">
+                    <field name="carrier_id"/>
+                </xpath>
             </field>
         </record>
         
