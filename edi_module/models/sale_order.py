@@ -38,6 +38,7 @@ class SaleOrder(models.Model):
         data = order_data.get('PullSalesOrdersOutResult', {})
         if data:
             ship_to_code = data.get('CardCode', False)
+            customer_po = data.get('NumAtCard', False)
             doc_date = data.get('DocDate', False)
             doc_due_date = data.get('DocDueDate', False)
             item_lines = data.get('DocumentLines', False)
@@ -97,6 +98,7 @@ class SaleOrder(models.Model):
                 'order_card_id': self._context.get('order_card_id', ''),
                 'doc_due_date': doc_due_date and datetime.strptime(doc_due_date, '%m/%d/%Y'),
                 'edi_order': True,
+                'client_order_ref': customer_po,
                 'is_ship_collect': partner_id.is_ship_collect,
                 'shipper_number': partner_id.is_ship_collect and partner_id.shipper_number or '',
                 'carrier_id': partner_id.carrier_id.id or carrier.id,
@@ -143,6 +145,13 @@ class SaleOrder(models.Model):
                         continue
                     order_data = json.loads(order_response.content)
                     order_id = self.with_context({'order_card_id': str(order_id)}).process_order_data(order_data)
+                    if order_id:
+                        try:
+                            delete_response = requests.delete(order_id_url, headers={"ACCESSTOKEN": access_token,
+                                                                                 "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+                        except Exception as e:
+                            continue
+
 
 
 class SaleOrderLine(models.Model):
