@@ -12,7 +12,9 @@
                     <button name="generate_shipping_label" type="object" string="Print Shipping label"
                             attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
                 </xpath>
-
+<!--                 <xpath expr="//field[@name='origin']" position="after">-->
+<!--                     <field name="is_back_order" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>-->
+<!--                 </xpath>-->
             </field>
         </record>
 

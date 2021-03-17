@@ -11,6 +11,7 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     picking_type_id_code = fields.Char('Picking Type Code', related='picking_type_id.sequence_code', readonly=True)
+#    is_back_order = fields.Boolean(string="Back Order", related="sale_id.is_back_order", store=True)
 
     def action_done(self):
         for rec in self:

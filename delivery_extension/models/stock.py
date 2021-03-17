@@ -141,6 +141,7 @@ class StockPicking(models.Model):
             if self.is_create_label and not self.carrier_id:
                 raise ValidationError('Please configure a Carrier to create a Label for %s' % self.name)
         self.create_label_on_validate = False
+#        self.mapped('sale_id').write({'is_back_order': False})
         return super(StockPicking, self).button_validate()
 
     def action_create_label(self):

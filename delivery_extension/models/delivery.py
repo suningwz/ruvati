@@ -518,12 +518,21 @@ class Provider(models.Model):
             package_type = picking.package_ids and picking.package_ids[0].packaging_id.shipper_package_code or self.ups_default_packaging_id.shipper_package_code
 
             # using customer's shipper number for UPS integration'
+            # if picking.is_ship_collect and not picking.sale_id.edi_order:
+            #     srm.send_shipping(
+            #     shipment_info=shipment_info, packages=packages, shipper=picking.company_id.partner_id, ship_from=picking.picking_type_id.warehouse_id.partner_id,
+            #     ship_to=picking.partner_id, packaging_type=package_type, service_type=ups_service_type, duty_payment='RECIPIENT',
+            #     label_file_type=self.ups_label_file_type, ups_carrier_account=picking.shipper_number, saturday_delivery=picking.carrier_id.ups_saturday_delivery,
+            #     cod_info=cod_info, order=picking.sale_id)
             if picking.is_ship_collect:
                 srm.send_shipping(
-                shipment_info=shipment_info, packages=packages, shipper=picking.company_id.partner_id, ship_from=picking.picking_type_id.warehouse_id.partner_id,
-                ship_to=picking.partner_id, packaging_type=package_type, service_type=ups_service_type, duty_payment='RECIPIENT',
-                label_file_type=self.ups_label_file_type, ups_carrier_account=picking.shipper_number, saturday_delivery=picking.carrier_id.ups_saturday_delivery,
-                cod_info=cod_info, order=picking.sale_id)
+                    shipment_info=shipment_info, packages=packages, shipper=picking.company_id.partner_id,
+                    ship_from=picking.picking_type_id.warehouse_id.partner_id,
+                    ship_to=picking.partner_id, packaging_type=package_type, service_type=ups_service_type,
+                    duty_payment='RECIPIENT',
+                    label_file_type=self.ups_label_file_type, ups_carrier_account=superself.ups_shipper_number,
+                    saturday_delivery=picking.carrier_id.ups_saturday_delivery,
+                    cod_info=cod_info, order=picking.sale_id)
             else:
                 srm.send_shipping(
                     shipment_info=shipment_info, packages=packages, shipper=picking.company_id.partner_id, ship_from=picking.picking_type_id.warehouse_id.partner_id,

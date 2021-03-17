@@ -61,10 +61,11 @@ class UPSRequestRef(UPSRequest):
             shipment.Package.append(package)
 
         shipment.Shipper = self.factory_ns2.ShipperType()
-        # sale_order_id = kwargs.get('order', False)
-        # postal_code = shipper.zip
-        # if sale_order_id and sale_order_id.is_ship_collect:
-        #     postal_code = sale_order_id.partner_id.zip
+        sale_order_id = kwargs.get('order', False)
+        if sale_order_id.is_ship_collect:
+            ups_carrier_shipper = ups_carrier_account
+        else:
+            ups_carrier_shipper = self.shipper_number
         shipment.Shipper.Address = self.factory_ns2.ShipAddressType()
         shipment.Shipper.AttentionName = (shipper.name or '')[:35]
         shipment.Shipper.Name = (shipper.parent_id.name or shipper.name or '')[:35]
@@ -74,7 +75,7 @@ class UPSRequestRef(UPSRequest):
         shipment.Shipper.Address.CountryCode = shipper.country_id.code or ''
         if shipper.country_id.code in ('US', 'CA', 'IE'):
             shipment.Shipper.Address.StateProvinceCode = shipper.state_id.code or ''
-        shipment.Shipper.ShipperNumber = self.shipper_number or ''
+        shipment.Shipper.ShipperNumber = ups_carrier_shipper or ''
         shipment.Shipper.Phone = self.factory_ns2.ShipPhoneType()
         shipment.Shipper.Phone.Number = self._clean_phone_number(shipper.phone)
 
@@ -125,17 +126,19 @@ class UPSRequestRef(UPSRequest):
         shipcharge = self.factory_ns2.ShipmentChargeType()
         shipcharge.Type = '01'
 
-        # Bill Recevier 'Bill My Account'
-        if ups_carrier_account:
-            shipcharge.BillReceiver = self.factory_ns2.BillReceiverType()
-            shipcharge.BillReceiver.Address = self.factory_ns2.BillReceiverAddressType()
-            shipcharge.BillReceiver.AccountNumber = ups_carrier_account
-            shipcharge.BillReceiver.Address.PostalCode = ship_to.zip
-            # shipcharge.BillThirdParty = self.factory_ns2.BillThirdPartyChargeType()
-            # shipcharge.BillThirdParty.AccountNumber = '0109FX'
-            # shipcharge.BillThirdParty.Address = self.factory_ns2.AccountAddressType()
-            # shipcharge.BillThirdParty.Address.PostalCode = '680711'
-            # shipcharge.BillThirdParty.Address.CountryCode = 'US'
+        # # Bill Recevier 'Bill My Account'
+        # if ups_carrier_account and not sale_order_id.edi_order:
+        #     shipcharge.BillReceiver = self.factory_ns2.BillReceiverType()
+        #     shipcharge.BillReceiver.Address = self.factory_ns2.BillReceiverAddressType()
+        #     shipcharge.BillReceiver.AccountNumber = ups_carrier_account
+        #     shipcharge.BillReceiver.Address.PostalCode = ship_to.zip or ''
+        # # Bill Third Party on EDI orders
+        if sale_order_id.is_ship_collect and ups_carrier_account:
+            shipcharge.BillThirdParty = self.factory_ns2.BillThirdPartyChargeType()
+            shipcharge.BillThirdParty.AccountNumber = self.shipper_number or ''
+            shipcharge.BillThirdParty.Address = self.factory_ns2.AccountAddressType()
+            shipcharge.BillThirdParty.Address.PostalCode = sale_order_id.partner_id.zip or ''
+            shipcharge.BillThirdParty.Address.CountryCode = sale_order_id.partner_id.country_id.code or ''
         else:
             shipcharge.BillShipper = self.factory_ns2.BillShipperType()
             shipcharge.BillShipper.AccountNumber = self.shipper_number or ''
