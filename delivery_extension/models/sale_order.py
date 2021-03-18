@@ -11,7 +11,7 @@ class SaleOrder(models.Model):
 #    carrier_id = fields.Many2one("delivery.carrier", string="Carrier", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     shipper_number = fields.Char(string="Shipper No.")
     products = fields.Char(string="Products")
-#    is_back_order = fields.Boolean(string="Back Order")
+    is_back_order = fields.Boolean(string="Back Order")
 
     def message_notify(self, *,
                        partner_ids=False, parent_id=False, model=False, res_id=False,

@@ -7,7 +7,7 @@
             <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='client_order_ref']" position="after">
-<!--                    <field name="is_back_order"/>-->
+                    <field name="is_back_order" attrs="{'readonly':[('state','=','sale')]}"/>
                     <field name="is_ship_collect"/>
                     <field name="carrier_id"/>
 <!--                    attrs="{'invisible': [('is_ship_collect', '=', False)]}"-->
@@ -26,8 +26,10 @@
             <field name="arch" type="xml">
                 <field name="partner_id" position="after">
                     <field name="partner_shipping_id" string="Deliver To" operator="child_of" filter_domain="['|', ('partner_shipping_id.name', 'ilike', self), '|', ('partner_shipping_id.phone', 'ilike', self), '|', ('partner_shipping_id.street', 'ilike', self), '|', ('partner_shipping_id.city', 'ilike', self), '|', ('partner_shipping_id.zip', 'ilike', self), ('partner_shipping_id.state_id', 'ilike', self)]"/>
-<!--                    <field name="is_back_order" string="Back Order"/>-->
                 </field>
+                <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                    <filter string="Back Order" name="is_back_order" domain="[('is_back_order', '=', True)]"/>
+                </xpath>
             </field>
         </record>
         
@@ -48,7 +50,7 @@
             <field name="inherit_id" ref="sale.view_quotation_tree"/>
             <field name="arch" type="xml">
                 <field name="name" position="after">
-                    <field name="client_order_ref" readonly="1"/>
+                    <field name="client_order_ref" readonly="1" string="Customer PO Number"/>
                 </field>
                 <field name="partner_id" position="after">
                     <field name="partner_shipping_id" readonly="1"/>
@@ -63,7 +65,7 @@
             <field name="inherit_id" ref="sale.view_order_tree"/>
             <field name="arch" type="xml">
                 <field name="name" position="after">
-                    <field name="client_order_ref" readonly="1"/>
+                    <field name="client_order_ref" readonly="1" string="Customer PO Number"/>
                 </field>
                 <field name="partner_id" position="after">
                     <field name="partner_shipping_id" readonly="1"/>

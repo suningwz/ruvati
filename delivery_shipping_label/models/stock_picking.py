@@ -1,4 +1,4 @@
-from odoo import models, _, fields
+from odoo import models, _, fields, api
 import base64
 from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
@@ -11,7 +11,16 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     picking_type_id_code = fields.Char('Picking Type Code', related='picking_type_id.sequence_code', readonly=True)
-#    is_back_order = fields.Boolean(string="Back Order", related="sale_id.is_back_order", store=True)
+    is_back_order = fields.Boolean(string="Back Order", compute="_compute_back_order",inverse="_inverse_back_order", store=True, copy=False, readonly=False)
+
+    @api.depends('sale_id.is_back_order')
+    def _compute_back_order(self):
+        for rec in self:
+            rec.is_back_order = rec.sale_id.is_back_order
+
+    def _inverse_back_order(self):
+        for rec in self:
+            rec.sale_id.update({'is_back_order': rec.is_back_order})
 
     def action_done(self):
         for rec in self:
