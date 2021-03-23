@@ -7,7 +7,8 @@ class BulkProcess(models.Model):
     
     def _cron_process_bulk_operations(self):
 #        self.set_package_dimensions()
-        self.set_products_in_so()
+#        self.set_products_in_so()
+        self.set_partner_display_name()
         
     def set_package_dimensions(self):
         pickings = self.env['stock.picking']
@@ -46,5 +47,10 @@ class BulkProcess(models.Model):
             internal_ref = order.order_line.mapped('product_id').filtered(lambda r: r.type != 'service' and r.default_code != False).mapped('default_code')
             if internal_ref:
                 order.products = ','.join(internal_ref)
+            
+    def set_partner_display_name(self):
+        partners = self.env['res.partner'].search([('type', '=', 'delivery')])
+        for partner in partners:
+            partner._compute_display_name()
             
 BulkProcess()
