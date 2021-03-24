@@ -108,3 +108,11 @@ class StockPickingBatch(models.Model):
         # Change the state only if there is no other action (= wizard) waiting.
         self.write({'state': 'done'})
         return True
+        
+        
+class StockPicking(models.Model):
+    _inherit = "stock.picking"
+    
+    customer_po_number = fields.Char(string="Customer PO Number", related="sale_id.client_order_ref")
+    
+    
