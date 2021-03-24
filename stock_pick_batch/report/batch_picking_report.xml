@@ -65,9 +65,8 @@
                                                     <h4><strong>Items :</strong></h4>
                                                 </td>
                                                 <td style="float:right;">
-                                                    <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;quiet=%s' % ('Code128', pick['name'], 400, 100, 0)"
-                                                         style="float:right;width:300px;height:70px"
-                                                         alt="Barcode"/>
+                                                   <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', pick['name'], 600, 100)"
+                                                        style="width:600px;height:100px" alt="Barcode"/>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -123,10 +122,8 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td style="float:right;">
-                                                    <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;quiet=%s' % ('Code128', pick['name'], 400, 100, 0)"
-                                                         style="float:right;width:300px;height:70px"
-                                                         alt="Barcode"/>
+                                                 <td style="float:right;">
+                                                    <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;' % ('Code128', pick['name'], 390, 110)" style="float:right;width:390px;height:110px" alt="Barcode"/>
                                                 </td>
                                             </tr>
                                             <tr>
