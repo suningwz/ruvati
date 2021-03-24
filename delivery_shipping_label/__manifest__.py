@@ -6,7 +6,7 @@
     'version': '1.0',
     'description': """
 Delivery Enhancements
-=============
+======================
 
 
 This Module provides the changes in inventory related operations.

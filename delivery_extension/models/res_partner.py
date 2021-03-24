@@ -17,4 +17,9 @@ class ResPartner(models.Model):
             self.shipper_number = False
             self.carrier_id = False
 
+    def _get_contact_name(self, partner, name):
+        if partner.type == 'delivery':
+            return "%s" % (name)
+        return super(ResPartner, self)._get_contact_name(partner, name)
+
 ResPartner()

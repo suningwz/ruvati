@@ -12,7 +12,20 @@
                     <button name="generate_shipping_label" type="object" string="Print Shipping label"
                             attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')]}"/>
                 </xpath>
+                <xpath expr="//field[@name='origin']" position="after">
+                     <field name="is_back_order" attrs="{'invisible': [('picking_type_id_code', '!=', 'PICK')],'readonly':[('state','=','done')]}"/>
+                 </xpath>
+            </field>
+        </record>
 
+        <record id="stock_picking_view_search_inherit_delivery_shipping_label" model="ir.ui.view">
+            <field name="name">stock.picking.search.inherit.delivery.shipping.label</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='my_transfers']" position="after">
+                    <filter string="Back Order" name="is_back_order" domain="[('is_back_order', '=', True)]"/>
+                </xpath>
             </field>
         </record>
 

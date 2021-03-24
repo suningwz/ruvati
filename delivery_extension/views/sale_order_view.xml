@@ -7,10 +7,28 @@
             <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='client_order_ref']" position="after">
+                    <field name="is_back_order" attrs="{'readonly':[('state','=','sale')]}"/>
                     <field name="is_ship_collect"/>
                     <field name="carrier_id"/>
 <!--                    attrs="{'invisible': [('is_ship_collect', '=', False)]}"-->
                     <field name="shipper_number" attrs="{'invisible': [('is_ship_collect', '=', False)]}"/>
+                </xpath>
+                <xpath expr="//field[@name='payment_term_id']" position="after">
+                    <field name="products" readonly="1"/>
+                </xpath>
+            </field>
+        </record>
+
+          <record id="sale_filter_inherited_delivery_extension" model="ir.ui.view">
+            <field name="name">sale.order.filter.inherit.delivery_extension</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+            <field name="arch" type="xml">
+                <field name="partner_id" position="after">
+                    <field name="partner_shipping_id" string="Deliver To" operator="child_of" filter_domain="['|', ('partner_shipping_id.name', 'ilike', self), '|', ('partner_shipping_id.phone', 'ilike', self), '|', ('partner_shipping_id.street', 'ilike', self), '|', ('partner_shipping_id.city', 'ilike', self), '|', ('partner_shipping_id.zip', 'ilike', self), ('partner_shipping_id.state_id', 'ilike', self)]"/>
+                </field>
+                <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                    <filter string="Back Order" name="is_back_order" domain="[('is_back_order', '=', True)]"/>
                 </xpath>
             </field>
         </record>
@@ -23,6 +41,36 @@
                 <button name="action_open_delivery_wizard" position="replace">
                     <button string="Add shipping" name="action_open_delivery_wizard" type="object" attrs="{'invisible': ['|', '|', '|', ('is_ship_collect', '=', True), ('is_all_service', '=', True), ('order_line', '=', []), ('delivery_set', '=', True)]}"/>
                 </button>
+            </field>
+        </record>
+        
+        <record id="view_quotation_tree_inherit" model="ir.ui.view">
+            <field name="name">view.quotation.tree.inherit</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_quotation_tree"/>
+            <field name="arch" type="xml">
+                <field name="name" position="after">
+                    <field name="client_order_ref" readonly="1" string="Customer PO Number"/>
+                </field>
+                <field name="partner_id" position="after">
+                    <field name="partner_shipping_id" readonly="1"/>
+                    <field name="products" readonly="1"/>
+                </field>
+            </field>
+        </record>
+        
+        <record id="view_order_tree_inherit" model="ir.ui.view">
+            <field name="name">view.order.tree.inherit</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_tree"/>
+            <field name="arch" type="xml">
+                <field name="name" position="after">
+                    <field name="client_order_ref" readonly="1" string="Customer PO Number"/>
+                </field>
+                <field name="partner_id" position="after">
+                    <field name="partner_shipping_id" readonly="1"/>
+                    <field name="products" readonly="1"/>
+                </field>
             </field>
         </record>
 
