@@ -4,7 +4,8 @@ from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
 import io
 from odoo.exceptions import UserError, ValidationError
-#from zplgrf import GRF
+import datetime
+import zpl
 
 
 class StockPicking(models.Model):
@@ -160,32 +161,136 @@ class StockPicking(models.Model):
 
         return package
 
+    def _get_fedex_zpl(self):
+        packing_slips = []
+
+        for pack in self.package_ids:
+
+            #Header
+            l = zpl.Label(100, 60)
+            l.origin(0, 3)
+            l.write_text("Packing Slip", char_height=2, char_width=2, line_width=60, justification='C')
+            l.endorigin()
+
+            l.origin(4, 7)
+            l.write_text("Ship TO: %s" % self.partner_id.street, char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(12, 9.8)
+            l.write_text("%s %s" % (self.partner_id.city, self.partner_id.zip), char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(12, 12)
+            l.write_text("%s (%s)"%(self.partner_id.state_id.name,self.partner_id.state_id.code), char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(12, 14)
+            l.write_text(self.partner_id.country_id.name, char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(40, 7)
+            l.write_text("Order#: %s" % self.origin, char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(40, 10)
+            l.write_text("Date: %s" % datetime.date.today().strftime('%m/%d/%Y'), char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(40, 12)
+            l.write_text("Ship Date: %s" % self.scheduled_date.strftime('%m/%d/%Y'), char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            #Table header
+
+            l.origin(5, 20)
+            l.write_text("SKU", char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(50, 20)
+            l.write_text("Qty", char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(4, 19)
+            l.draw_box(700, 50, thickness=2, color='B', rounding=0)
+            l.endorigin()
+            for quant in pack.quant_ids:
+                #Table Body
+                l.origin(5, 25)
+                l.write_text(quant.product_id.default_code, char_height=4, char_width=4, line_width=60, justification='L')
+
+                l.endorigin()
+
+                l.origin(50, 25)
+                l.write_text(int(quant.quantity), char_height=4, char_width=4, line_width=60, justification='L')
+
+                l.endorigin()
+
+            l.origin(4, 30)
+            l.write_text("Dealer# %s" % (self.sale_id.partner_id.email or self.sale_id.partner_id.name), char_height=2,
+                         char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+            l.origin(3, 32)
+            l.write_text("--------------------------------------------------------------------------", char_height=1,
+                         char_width=1, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(12, 37)
+            l.write_barcode(height=70, barcode_type='C', check_digit='Y')
+            l.write_text(self.get_order())
+            l.endorigin()
+
+            l.origin(4, 50)
+            l.write_text("DO NOT REMOVE OR COVER THIS BARCODE.REQUIRED FOR RETURNS", char_height=2, char_width=2,
+                         line_width=60, justification='L')
+
+            l.endorigin()
+            l.origin(28, 52)
+            l.write_text("PROCESSING", char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+            packing_slips.append(l.dumpZPL())
+        return packing_slips
+
     def generate_shipping_label(self):
-        packing_slip = self.env.ref('delivery_shipping_label.action_report_packslip').render_qweb_pdf(self.id)[0]
         if self.carrier_id.delivery_type == 'fedex':
+            packing_slips = self._get_fedex_zpl()
             return_label_ids = self.env['ir.attachment'].search(
                 [('res_model', '=', 'stock.picking'), ('res_id', '=', self.id),
                  ('name', 'like', '%s%%' % 'LabelFedex')])
             if not return_label_ids:
                 raise UserError("Shipping labels not generated")
-            return_labels = [return_label_ids and base64.b64decode(return_label_ids[0].datas)]
+            return_labels = [base64.b64decode(return_label_id.datas) for return_label_id in return_label_ids]
+            zpl_merged = ''
+            for label_index in range(0,len(return_labels)):
+                zpl_merged += return_labels[label_index].decode() + packing_slips[label_index]
+            merged_pdf = base64.encodestring(str.encode(zpl_merged))
+            label_name = "Shipping_Label.ZPL"
+
         else:
+            packing_slip = self.env.ref('delivery_shipping_label.action_report_packslip').render_qweb_pdf(self.id)[0]
             return_label = self.env.ref('delivery_shipping_label.action_report_labelslip').render_qweb_pdf(self.id)[0]
             return_labels = [return_label]
-        packing_slips = [packing_slip]
-        delivery_type = self.carrier_id.delivery_type
-        merged_pdf = self.with_context(delivery_type=delivery_type).merge_pdfs(packing_slips, return_labels)
-        # with open('LabelFedex.PDF', 'rb') as pdf:
-        #     pages = GRF.from_pdf(pdf.read(), 'DEMO', center_of_pixel=False)
-        # grf_merged = ''
-        # for grf in pages:
-        #     grf.optimise_barcodes()
-        #     grf_merged += grf.to_zpl()
-        # str.encode(grf_merged)
+            packing_slips = [packing_slip]
+            delivery_type = self.carrier_id.delivery_type
+            merged_pdf = self.with_context(delivery_type=delivery_type).merge_pdfs(packing_slips, return_labels)
+            merged_pdf = base64.encodestring(merged_pdf)
+            label_name = "Shipping_Label.pdf"
+
         attachment_id = self.env['ir.attachment'].create({
-            'name': "Shipping_Label.pdf",
+            'name': label_name,
             'type': 'binary',
-            'datas': base64.encodestring(merged_pdf),
+            'datas': merged_pdf,
             'res_model': self._name,
             'res_id': self.id
         })
