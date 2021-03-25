@@ -23,16 +23,19 @@ class StockPicking(models.Model):
         password = configuration.password
         auth_token = configuration.auth_token
         client_id = configuration.client_id
-        response = requests.get(exchange_token_url,
-                                headers={'UID': uid, 'PWORD': password,
-                                         'AUTHTOKEN': auth_token,
-                                         'CLIENTID': client_id})
-        content = json.loads(response.content)
-        access_token = content['ExchangeTokenResult']['access_token']
-        #post data
-        post_url = configuration.post_url
-        response = requests.post(post_url, data=json.dumps(data), headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
-        self.transaction_id = response.content and json.loads(response.content)
+        try:
+            response = requests.get(exchange_token_url,
+                                    headers={'UID': uid, 'PWORD': password,
+                                             'AUTHTOKEN': auth_token,
+                                             'CLIENTID': client_id})
+            content = json.loads(response.content)
+            access_token = content['ExchangeTokenResult']['access_token']
+            #post data
+            post_url = configuration.post_url
+            response = requests.post(post_url, data=json.dumps(data), headers={"ACCESSTOKEN": access_token, "CLIENTID": "39FC0B24-4544-475F-A5EE-B1DDB8CDA6DD"})
+            self.transaction_id = response.content and json.loads(response.content)
+        except Exception as e:
+            pass
 
     def _get_cartons(self):
         cartons = []
