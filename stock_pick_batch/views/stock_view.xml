@@ -49,6 +49,7 @@
             <field name="arch" type="xml">
                 <field name="origin" position="after">
                     <field name="customer_po_number" readonly="1"/>
+                    <field name="dealer" readonly="1"/>
                 </field>
             </field>
         </record>
