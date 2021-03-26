@@ -353,18 +353,29 @@ class StockPickingBatch(models.Model):
 #        picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done')
 #        if not picking_ids:
 #            raise ValidationError("Please validate the picking to print lablel")
+        delivery_type = False
         for picking in self.picking_ids:
+            delivery_type = picking.carrier_id.delivery_type
             attachments.append(picking.generate_shipping_label())
         for attachment in attachments:
             url = attachment['url'].split('?')
             pick_attachment_id = url[0].split('/')[-1]
             pick_attachment = self.env['ir.attachment'].browse(int(pick_attachment_id))
             attachment_ids.append(pick_attachment)
-        merged_pdf = self.merge_packing_slip(attachment_ids)
+        zpl_merged = ''
+        if delivery_type == 'fedex':
+            for attach in attachment_ids:
+                zpl_merged += base64.b64decode(attach.datas).decode()
+            merged_pdf = base64.encodestring(str.encode(zpl_merged))
+            label_name = "Shipping_Label.ZPL"
+        else:
+            merged_pdf = self.merge_packing_slip(attachment_ids)
+            label_name = "Shipping_Label.pdf"
+            merged_pdf = base64.encodestring(merged_pdf)
         attachment_id = self.env['ir.attachment'].create({
-            'name': "Shipping_Label.pdf",
+            'name': label_name,
             'type': 'binary',
-            'datas': base64.encodestring(merged_pdf),
+            'datas': merged_pdf,
             'res_model': self._name,
             'res_id': self.id
         })
