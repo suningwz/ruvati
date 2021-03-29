@@ -222,17 +222,32 @@ class StockPicking(models.Model):
             l.origin(4, 19)
             l.draw_box(700, 50, thickness=2, color='B', rounding=0)
             l.endorigin()
-            for quant in pack.quant_ids:
-                #Table Body
-                l.origin(5, 25)
-                l.write_text(quant.product_id.default_code, char_height=4, char_width=4, line_width=60, justification='L')
+            if pack.quant_ids:
+                for quant in pack.quant_ids:
+                    #Table Body
+                    l.origin(5, 25)
+                    l.write_text(quant.product_id.default_code, char_height=4, char_width=4, line_width=60, justification='L')
 
-                l.endorigin()
+                    l.endorigin()
 
-                l.origin(50, 25)
-                l.write_text(int(quant.quantity), char_height=4, char_width=4, line_width=60, justification='L')
+                    l.origin(50, 25)
+                    l.write_text(int(quant.quantity), char_height=4, char_width=4, line_width=60, justification='L')
 
-                l.endorigin()
+                    l.endorigin()
+            else:
+                for move_line in self.move_line_ids:
+                    if move_line.result_package_id == pack:
+                        # Table Body
+                        l.origin(5, 25)
+                        l.write_text(move_line.product_id.default_code, char_height=4, char_width=4, line_width=60,
+                                     justification='L')
+
+                        l.endorigin()
+
+                        l.origin(50, 25)
+                        l.write_text(int(move_line.product_uom_qty), char_height=4, char_width=4, line_width=60, justification='L')
+
+                        l.endorigin()
 
             l.origin(4, 30)
             l.write_text("Dealer# %s" % (self.sale_id.partner_id.email or self.sale_id.partner_id.name), char_height=2,
