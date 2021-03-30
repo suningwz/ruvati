@@ -141,8 +141,8 @@ class Provider(models.Model):
                         po_number=order.client_order_ref and order.client_order_ref or po_number,
 #                        po_number='8119',
                         dept_number=dept_number,
-                        reference='8119',
-                        invoice_number=order.display_name or False,
+                        reference=order.display_name or False,
+                        invoice_number='8119',
                     )
                     else:
                         srm._add_package(
@@ -225,8 +225,8 @@ class Provider(models.Model):
                         po_number=order.client_order_ref and order.client_order_ref or po_number,
 #                        po_number='8119',
                         dept_number=dept_number,
-                        reference='8119',
-                        invoice_number=order.display_name or False,
+                        reference=order.display_name or False,
+                        invoice_number='8119',
                     )
                 else:
                     srm._add_package(
