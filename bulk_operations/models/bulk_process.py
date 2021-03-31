@@ -6,9 +6,9 @@ class BulkProcess(models.Model):
     _name = 'bulk.process'
     
     def _cron_process_bulk_operations(self):
-#        self.set_package_dimensions()
+        self.set_package_dimensions()
 #        self.set_products_in_so()
-        self.set_partner_display_name()
+#        self.set_partner_display_name()
         
     def set_package_dimensions(self):
         pickings = self.env['stock.picking']
