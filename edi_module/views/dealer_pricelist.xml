@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<odoo>
+
+    <record id="dealer_price_list_view" model="ir.ui.view">
+        <field name="name">edi.customer.price_list.view</field>
+        <field name="model">edi.customer</field>
+        <field name="arch" type="xml">
+            <form create="0" string="EDI Customers">
+                <group>
+                    <field name="partner_id"/>
+                    <field name="customer_id" string="Card Code"/>
+                    <field name="sale_approved_price"/>
+                    <field name="sku_product_id" string="SKU Code"/>
+                </group>
+
+            </form>
+
+        </field>
+
+    </record>
+
+    <record id="dealer_price_list_tree" model="ir.ui.view">
+        <field name="name">edi.customer.price.list.view</field>
+        <field name="model">edi.customer</field>
+        <field name="arch" type="xml">
+            <tree string="EDI Customers">
+                    <field name="partner_id"/>
+                    <field name="customer_id" string="Card Code"/>
+                    <field name="sale_approved_price"/>
+                    <field name="sku_product_id" string="SKU Code"/>
+
+            </tree>
+
+        </field>
+
+    </record>
+
+    <record id="view_dealer_pricelist_search" model="ir.ui.view">
+        <field name="name">edi.customer.search</field>
+        <field name="model">edi.customer</field>
+        <field name="arch" type="xml">
+            <search string="Dealer Price List">
+                <field name="partner_id"/>
+                <field name="customer_id"/>
+            </search>
+        </field>
+    </record>
+
+
+
+    <record id="dealer_price_list_action" model="ir.actions.act_window">
+        <field name="name">Dealer Price list</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">edi.customer</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="dealer_price_list_menu"
+              name="Dealer Price list"
+              parent="sale.product_menu_catalog"
+              action="dealer_price_list_action"
+              sequence="12"/>
+
+</odoo>

@@ -9,6 +9,7 @@ class Product(models.Model):
 
 class EdiCustomer(models.Model):
     _name = 'edi.customer'
+    _rec_name = 'partner_id'
 
     product_id = fields.Many2one('product.template', string="Product")
     partner_id = fields.Many2one('res.partner', string="Customer")
