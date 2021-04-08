@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_shipment_report_excel" model="ir.ui.view">
+        <field name="name">PO Shipment Report</field>
+        <field name="model">po.shipment.excel</field>
+        <field name="arch" type="xml">
+            <form string="Po Shipment Excel">
+                <group >
+                    <field name="name" invisible="1" width="100"/>
+                    <field name="data" nolabel="1" readonly="1" width="100" filename="name"/>
+                </group>
+                <footer>
+                    <button special="cancel" string="Close" class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

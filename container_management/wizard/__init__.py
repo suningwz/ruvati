@@ -3,5 +3,6 @@
 from . import transfer_container
 from . import shipment_report
 from . import stock_internal_transfer
+from . import export_shipment
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
