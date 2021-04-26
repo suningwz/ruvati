@@ -115,4 +115,10 @@ class StockPicking(models.Model):
     
     customer_po_number = fields.Char(string="Customer PO Number", related="sale_id.client_order_ref")
     dealer = fields.Many2one('res.partner', string="Dealer", related="sale_id.partner_id")
-    
+    product_sku = fields.Char(string="Product SKU", compute="_compute_product_sku")
+
+    def _compute_product_sku(self):
+        for pick in self:
+            internal_ref = pick.move_ids_without_package.mapped('product_id').mapped('default_code')
+            pick.product_sku = ','.join(internal_ref)
+

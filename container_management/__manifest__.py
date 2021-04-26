@@ -17,6 +17,7 @@
         'wizard/stock_internal_transfer_views.xml',
         'wizard/transfer_container.xml',
         'wizard/shipment_report.xml',
+        'wizard/export_shipment.xml',
         'views/res_partner.xml',
         'views/house_bill_of_lading.xml',
         'views/container.xml',
