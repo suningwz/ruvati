@@ -51,8 +51,19 @@
                     <field name="customer_po_number" readonly="1"/>
                     <field name="dealer" readonly="1"/>
                 </field>
+                 <field name="partner_id" position="after">
+                     <field name="product_sku" readonly="1"/>
+                </field>
             </field>
         </record>
 
+         <record id="view_picking_inherit_search" model="ir.ui.view">
+            <field name="name">stock.picking.inherit.search</field>
+             <field name="model">stock.picking</field>
+             <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+            <field name="arch" type="xml">
+                 <xpath expr="//filter[@name='backorder']" position="replace"/>
+            </field>
+         </record>
     </data>
 </odoo>
