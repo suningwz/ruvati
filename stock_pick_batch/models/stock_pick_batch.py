@@ -120,8 +120,9 @@ class StockPicking(models.Model):
 
     def _compute_product_sku(self):
         for pick in self:
-            internal_ref = pick.move_ids_without_package.mapped('product_id').mapped('default_code')
+            move_ids = pick.move_ids_without_package.filtered(lambda r : r.product_id.default_code)
+            internal_reference = move_ids.mapped('product_id').mapped('default_code')
+            pick.product_sku = ','.join(internal_reference)
             quantity = pick.move_ids_without_package.mapped('product_uom_qty')
-            pick.product_sku = ','.join(internal_ref)
-            pick.qty_order = ','.join(str(int(qty)) for qty in quantity)
+            pick.qty_order = ','.join(['%d'%(qty) for qty in quantity])
 
