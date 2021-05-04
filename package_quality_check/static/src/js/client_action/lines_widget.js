@@ -22,7 +22,8 @@ LinesWidget.include({
 
     init: function (parent, page, pageIndex, nbPages) {
         this._super.apply(this, arguments);
-        if (parent.currentState.name.includes('QC')) {
+        var qc_pattern = /^[K]\d{7}$/
+        if (parent.currentState.name.match(qc_pattern)) {
             this.qc_pick = true;
         }
     },
