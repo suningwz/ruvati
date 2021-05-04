@@ -384,7 +384,10 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             
         } else {
             // destroy current page before redirecting to another picking if it is PICK or QC.
-            if (barcode.includes("PICK") || barcode.includes("QC") || barcode.includes("OUT") || barcode.includes("IN")) {
+            var qc_pattern = /^[K]\d{7}$/;
+            var pick_pattern = /^[C]\d{7}$/;
+            var in_pattern = /RE\d{6}$/;
+            if (barcode.match(pick_pattern) || barcode.match(qc_pattern) || barcode.includes("OUT") || barcode.match(in_pattern)) {
                 self.destroy();
             } 
             var success = function (res) {
