@@ -27,7 +27,7 @@ class StockPicking(models.Model):
     container_id = fields.Many2one('container.container', string="Container", readonly=True, states={'draft': [('readonly', False)]})
     po_id = fields.Many2one('purchase.order',string="Purchase Order", readonly=True, states={'draft': [('readonly', False)]})
     warehouse_code = fields.Char(related="picking_type_id.warehouse_id.code", string="Warehouse code")
-    carrier = fields.Char(string="Carrier")
+    carrier = fields.Char(string="Container Carrier")
     bill_of_lading = fields.Char(string="Bill of Lading")
     direct_transfer_done = fields.Boolean(string="Done Direct Transfer")
 #    is_transfer_done = fields.Boolean(stirng= "Internal Transfer Done", copy=False)

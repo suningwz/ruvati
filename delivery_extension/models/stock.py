@@ -10,11 +10,13 @@ import json
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    is_create_label = fields.Boolean(string="Create Label")
+    is_create_label = fields.Boolean(string="Is Create Label")
     shipper_number = fields.Char(string="Shipper No.")
     is_ship_collect = fields.Boolean(string="Ship Collect")
-    create_label_on_validate = fields.Boolean(string="Create Label")
+    create_label_on_validate = fields.Boolean(string="Create Label-validate")
     transaction_id = fields.Char("Transaction ID")
+    # string change to avoid custom filter confusions
+    backorder_ids = fields.One2many('stock.picking', 'backorder_id', 'List of Back Orders')
 
     def send_data(self, data):
         configuration = self.env['edi.configuration'].search([], limit=1)
