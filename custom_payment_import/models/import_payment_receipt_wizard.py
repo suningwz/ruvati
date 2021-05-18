@@ -44,11 +44,12 @@ class ImportPaymentReceiptWizard(models.TransientModel):
         for i_data in vals:
             data = dict(i_data)
             order = self.env['sale.order'].search([('client_order_ref', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
-            if order:
-                if len(order.invoice_ids) > 1:
-                    invoices = order.invoice_ids.filtered(lambda r: r.name == data['Invoice Number'])
-                else:
-                    invoices = order.invoice_ids
+            if not order:
+                raise UserError("No sale order for the corresponding Customer PO Number: %s" % data['PO Number/Text'].split('.')[0])
+            if len(order.invoice_ids) > 1:
+                invoices = order.invoice_ids.filtered(lambda r: r.name == data['Invoice Number'])
+            else:
+                invoices = order.invoice_ids
             if invoices:
                 if invoices.type == 'out_invoice':
                     payment_vals = {
@@ -63,14 +64,15 @@ class ImportPaymentReceiptWizard(models.TransientModel):
                     }
                 if invoices.type == 'out_refund':
                     payment_vals.update({'payment_type': 'outbound'})
+
+                payment_dif = float_round(
+                                float(data['GrossAmount']) - float(data['Adjmt Amount']),
+                                precision_digits=2)
+                write_of_account = self.env.user.company_id.writeoff_account_id
+                if not write_of_account:
+                    raise UserError("Missing required account, is to be set inside the company.")
+                payment_vals['amount'] = payment_dif
                 if data['Adjmt Amount']:
-                    payment_dif = float_round(
-                                    float(data['GrossAmount']) - float(data['Adjmt Amount']),
-                                    precision_digits=2)
-                    write_of_account = invoices.company_id and invoices.company_id.writeoff_account_id
-                    if not write_of_account:
-                        raise UserError("Missing required account, is to be set inside the company.")
-                    payment_vals['amount'] = payment_dif
                     payment_vals['payment_difference'] = float(data['GrossAmount']) - payment_dif
                     payment_vals['writeoff_account_id'] = write_of_account.id
                     payment_vals['payment_difference_handling'] = 'reconcile'
@@ -90,7 +92,6 @@ class ImportPaymentReceiptWizard(models.TransientModel):
                 file_reader.extend(csv_reader)
             except:
                 raise UserError("Invalid file!")
-
             create_payment_vals = self.create_payment(file_reader)
             if create_payment_vals:
                 for vals in create_payment_vals:
@@ -118,9 +119,6 @@ class ImportPaymentReceiptWizard(models.TransientModel):
                 for vals in create_payment_vals:
                     payment = self.env['account.payment'].create(vals)
                     payment.post()
+
+
 ImportPaymentReceiptWizard()
-
-
-
-
-
