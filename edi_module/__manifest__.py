@@ -22,7 +22,7 @@ This Module provides the basic configuration.
         'views/product_view.xml',
         'views/sale_view.xml',
         'views/account_view.xml',
-        'views/dealer_pricelist.xml',
+        # 'views/dealer_pricelist.xml',
     ],
     'qweb': [],
     'installable': True,

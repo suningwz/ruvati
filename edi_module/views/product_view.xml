@@ -13,14 +13,14 @@
                             <field name="partner_id"/>
                             <field name="customer_id" string="Card Code"/>
                             <field name="sku_product_id" string="SKU Code"/>
-                            <field name="sale_approved_price"/>
+                            <field name="sale_approved_price" invisible="1"/>
 
                         </tree>
                         <form string="EDI Customers">
                             <group>
                                 <field name="partner_id"/>
                                 <field name="customer_id" string="Card Code"/>
-                                <field name="sale_approved_price"/>
+                                <field name="sale_approved_price" invisible="1"/>
                                 <field name="sku_product_id" string="SKU Code"/>
                             </group>
 
