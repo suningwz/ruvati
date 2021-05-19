@@ -69,11 +69,11 @@ class ImportPaymentReceiptWizard(models.TransientModel):
                 payment_dif = float_round(
                                 float(data['GrossAmount']) - float(data['Adjmt Amount']),
                                 precision_digits=2)
-                write_of_account = self.env.user.company_id.writeoff_account_id
-                if not write_of_account:
-                    raise UserError("Missing required account, is to be set inside the company.")
                 payment_vals['amount'] = payment_dif
-                if data['Adjmt Amount']:
+                if data['Adjmt Amount'] and float(data['Adjmt Amount']):
+                    write_of_account = self.env.user.company_id.writeoff_account_id
+                    if not write_of_account:
+                        raise UserError("Missing required account, is to be set inside the company.")
                     payment_vals['payment_difference'] = float(data['GrossAmount']) - payment_dif
                     payment_vals['writeoff_account_id'] = write_of_account.id
                     payment_vals['payment_difference_handling'] = 'reconcile'
