@@ -43,7 +43,8 @@ class ImportPaymentReceiptWizard(models.TransientModel):
             raise UserError("Choose appropriate payment method!")
         for i_data in vals:
             data = dict(i_data)
-            order = self.env['sale.order'].search([('client_order_ref', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
+            order = self.env['sale.order'].search(['|', ('client_order_ref', '=', data['PO Number/Text'].split('.')[0]),
+                                                   ('name', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
             if not order:
                 raise UserError("No sale order for the corresponding Customer PO Number: %s" % data['PO Number/Text'].split('.')[0])
             if len(order.invoice_ids) > 1:
