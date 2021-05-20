@@ -53,4 +53,32 @@
             </div>
         </xpath>
     </template>
+    <template id="ruvati_total_template_inherit" inherit_id="website_sale.total">
+        <xpath expr="//table/tr[@id='order_total']" position="after">
+            <tr id="customer_po" t-if="website_sale_order.client_order_ref">
+                <td class="text-right">
+                    <strong>PO Number:</strong>
+              </td>
+                <td class="text-xl-right">
+                  <strong t-field="website_sale_order.client_order_ref"/>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-right" colspan="3" >
+                  <form action="/shop/poupdate" method="post" name="po_ref_update">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" />
+                    <div class="input-group w-100">
+                        <input name="po_ref" class="form-control" type="text" placeholder="PO Number..."/>
+                        <div class="input-group-append">
+                            <a href="#" role="button" class="btn btn-secondary a-submit">Update</a>
+                        </div>
+                    </div>
+                    </form>
+              </td>
+            </tr>
+            <tr>
+                <td colspan="3"/>
+            </tr>
+        </xpath>
+    </template>
 </odoo>
