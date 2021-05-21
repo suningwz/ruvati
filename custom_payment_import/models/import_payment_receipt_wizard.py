@@ -42,30 +42,25 @@ class ImportPaymentReceiptWizard(models.TransientModel):
         if not payment_method_id:
             raise UserError("Choose appropriate payment method!")
         for i_data in vals:
+            payment_vals = {}
             data = dict(i_data)
-            order = self.env['sale.order'].search(['|','&', ('client_order_ref', '=', data['PO Number/Text'].split('.')[0]),
+            order = self.env['sale.order'].search(['|', ('client_order_ref', '=', data['PO Number/Text'].split('.')[0]),
                                                    ('name', '=', data['PO Number/Text'].split('.')[0]), ('partner_id', '=', self.partner_id.id)], limit=1)
             if not order:
-                raise UserError("No sale order for the corresponding Customer PO Number: %s" % data['PO Number/Text'].split('.')[0])
-            if len(order.invoice_ids) > 1:
-                invoices = order.invoice_ids.filtered(lambda r: r.name == data['Invoice Number'])
-            else:
-                invoices = order.invoice_ids
+                raise UserError("Check partner choosen /No sale order for the corresponding Customer PO Number")
+            invoices = order.invoice_ids.filtered(lambda r: r.name == data['Invoice Number'] and r.invoice_payment_state != 'paid' and r.state == 'posted')
             if invoices:
-                if invoices.type == 'out_invoice':
-                    payment_vals = {
-                        'journal_id': journal_id.id,
-                        'payment_method_id': payment_method_id.id,
-                        'communication': self.check_number,
-                        'invoice_ids': [(6, 0, invoices.ids)],
-                        'payment_type': 'inbound',
-                        'amount': float(data['Net Amount']),
-                        'partner_id': invoices.partner_id.id,
-                        'partner_type': 'customer',
-                    }
-                if invoices.type == 'out_refund':
-                    payment_vals.update({'payment_type': 'outbound'})
-
+                payment_vals.update({
+                    'partner_type': 'customer',
+                    'journal_id': journal_id.id,
+                    'payment_method_id': payment_method_id.id,
+                    'communication' : data['Invoice Number'],
+                    'check_number': self.check_number,
+                    'invoice_ids': [(6, 0, invoices.ids)],
+                    'payment_type': 'inbound' if invoices.type == 'out_invoice' else 'outbound',
+                    'amount': float(data['Net Amount']),
+                    'partner_id': invoices.partner_id.id,
+                })
                 payment_dif = float_round(
                                 float(data['GrossAmount']) - float(data['Adjmt Amount']),
                                 precision_digits=2)
