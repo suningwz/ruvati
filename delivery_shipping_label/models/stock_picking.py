@@ -26,7 +26,8 @@ class StockPicking(models.Model):
     def action_done(self):
         for rec in self:
             if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
-                if not rec.has_packages:
+                pack_id = self.env.ref('stock.location_pack_zone')
+                if pack_id and rec.location_dest_id.id == pack_id.id:
                     rec.put_in_pack()
         return super(StockPicking, self).action_done()
 
@@ -34,7 +35,8 @@ class StockPicking(models.Model):
         res = super(StockPicking, self).action_assign()
         for rec in self:
             if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
-                if not rec.has_packages:
+                pack_id = self.env.ref('stock.location_pack_zone')
+                if pack_id and rec.location_dest_id.id == pack_id.id:
                     rec.with_context({'assign': True}).put_in_pack()
         return res
 
