@@ -27,7 +27,7 @@ class StockPicking(models.Model):
         for rec in self:
             if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
                 pack_id = self.env.ref('stock.location_pack_zone')
-                if not rec.has_packages:
+                if pack_id and rec.location_dest_id.id == pack_id.id:
                     rec.put_in_pack()
         return super(StockPicking, self).action_done()
 
@@ -36,7 +36,7 @@ class StockPicking(models.Model):
         for rec in self:
             if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
                 pack_id = self.env.ref('stock.location_pack_zone')
-                if not rec.has_packages:
+                if pack_id and rec.location_dest_id.id == pack_id.id:
                     rec.with_context({'assign': True}).put_in_pack()
         return res
 
@@ -78,8 +78,7 @@ class StockPicking(models.Model):
 
             move_line_ids = picking_move_lines.filtered(lambda ml:
                                                         float_compare(ml.qty_done, 0.0,
-                                                                      precision_rounding=ml.product_uom_id.rounding) > 0
-                                                        and not ml.result_package_id
+                                                                      precision_rounding=ml.product_uom_id.rounding) > 0 and not ml.result_package_id
                                                         )
             if not move_line_ids:
                 move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
@@ -94,7 +93,7 @@ class StockPicking(models.Model):
             else:
                 if self._context.get('assign',False):
                     return {}
-                raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
+                # raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
 
     def _put_in_pack(self, move_line_ids):
         package = False
@@ -122,6 +121,7 @@ class StockPicking(models.Model):
                     ml.write({'product_uom_qty': quantity_left_todo, 'qty_done': 0.0})
                     new_move_line.write({'product_uom_qty': done_to_keep})
                     move_lines_to_pack |= new_move_line
+
             for pack_line in move_lines_to_pack:
                 pack_line_count = 1
                 for line_range in range(int(pack_line.product_uom_qty)):
@@ -131,33 +131,35 @@ class StockPicking(models.Model):
                         new_pack_line = pack_line.copy(
                             default={'product_uom_qty': 0, 'qty_done': 0})
                         # pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
-                        new_pack_line.write({'product_uom_qty': 1})
+                        new_pack_line.write({'product_uom_qty': 1, 'result_package_id': False, 'package_created': False})
+                    if not new_pack_line.result_package_id and not new_pack_line.package_created:
 
-                    package = self.env['stock.quant.package'].create({
-                        'shipping_weight': pack_line.product_id.weight,
-                        'height': pack_line.product_id.height,
-                        'width': pack_line.product_id.width,
-                        'length': pack_line.product_id.length
-                    })
-                    packaging_id = self.env['product.packaging'].create({
-                        'name': package.name,
-                        'height': pack_line.product_id.height,
-                        'width': pack_line.product_id.width,
-                        'length': pack_line.product_id.length
-                    })
-                    package.packaging_id = packaging_id.id
+                        package = self.env['stock.quant.package'].create({
+                            'shipping_weight': pack_line.product_id.weight,
+                            'height': pack_line.product_id.height,
+                            'width': pack_line.product_id.width,
+                            'length': pack_line.product_id.length
+                        })
+                        packaging_id = self.env['product.packaging'].create({
+                            'name': package.name,
+                            'height': pack_line.product_id.height,
+                            'width': pack_line.product_id.width,
+                            'length': pack_line.product_id.length
+                        })
+                        package.packaging_id = packaging_id.id
 
-                    package_level = self.env['stock.package_level'].create({
-                        'package_id': package.id,
-                        'picking_id': pick.id,
-                        'location_id': False,
-                        'location_dest_id': move_line_ids.mapped('location_dest_id').id,
-                        'move_line_ids': [(6, 0, new_pack_line.id)],
-                        'company_id': pick.company_id.id,
-                    })
-                    new_pack_line.write({
-                        'result_package_id': package.id,
-                    })
+                        package_level = self.env['stock.package_level'].create({
+                            'package_id': package.id,
+                            'picking_id': pick.id,
+                            'location_id': False,
+                            'location_dest_id': move_line_ids.mapped('location_dest_id').id,
+                            'move_line_ids': [(6, 0, new_pack_line.id)],
+                            'company_id': pick.company_id.id,
+                        })
+                        new_pack_line.write({
+                            'result_package_id': package.id,
+                            'package_created': True
+                        })
                 if pack_line.product_uom_qty >= 1:
                     pack_line.write({'product_uom_qty': 1, 'qty_done': 0})
 
@@ -428,4 +430,10 @@ class StockPickingBatch(models.Model):
             raise ValidationError("Label is created for all pickings.")
         for rec in picking_ids:
             rec.action_create_label()
+
+
+class StockMoveLine(models.Model):
+    _inherit = 'stock.move.line'
+
+    package_created = fields.Boolean("Package Exists", copy=False)
 
