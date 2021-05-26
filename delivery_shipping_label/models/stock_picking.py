@@ -28,7 +28,7 @@ class StockPicking(models.Model):
             if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
                 pack_id = self.env.ref('stock.location_pack_zone')
                 if pack_id and rec.location_dest_id.id == pack_id.id:
-                    rec.put_in_pack()
+                    rec.with_context({'validate': True}).put_in_pack()
         return super(StockPicking, self).action_done()
 
     def action_assign(self):
@@ -78,7 +78,7 @@ class StockPicking(models.Model):
 
             move_line_ids = picking_move_lines.filtered(lambda ml:
                                                         float_compare(ml.qty_done, 0.0,
-                                                                      precision_rounding=ml.product_uom_id.rounding) > 0 and not ml.result_package_id
+                                                                      precision_rounding=ml.product_uom_id.rounding) > 0
                                                         )
             if not move_line_ids:
                 move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
@@ -111,27 +111,43 @@ class StockPicking(models.Model):
                                  precision_rounding=ml.product_uom_id.rounding) >= 0:
                     move_lines_to_pack |= ml
                 else:
-                    quantity_left_todo = float_round(
-                        ml.product_uom_qty - ml.qty_done,
-                        precision_rounding=ml.product_uom_id.rounding,
-                        rounding_method='UP')
-                    done_to_keep = ml.qty_done
-                    new_move_line = ml.copy(
-                        default={'product_uom_qty': 0, 'qty_done': ml.qty_done})
-                    ml.write({'product_uom_qty': quantity_left_todo, 'qty_done': 0.0})
-                    new_move_line.write({'product_uom_qty': done_to_keep})
-                    move_lines_to_pack |= new_move_line
+                    ml.qty_done = 0
+                    # quantity_left_todo = float_round(
+                    #     ml.product_uom_qty - ml.qty_done,
+                    #     precision_rounding=ml.product_uom_id.rounding,
+                    #     rounding_method='UP')
+                    # done_to_keep = ml.qty_done
+                    # new_move_line = ml.copy(
+                    #     default={'product_uom_qty': 0, 'qty_done': ml.qty_done})
+                    # ml.write({'product_uom_qty': quantity_left_todo, 'qty_done': 0.0})
+                    # new_move_line.write({'product_uom_qty': done_to_keep})
+                    move_lines_to_pack |= ml
+            Quant = self.env['stock.quant']
 
             for pack_line in move_lines_to_pack:
                 pack_line_count = 1
+                reserved_qty = pack_line.product_uom_qty
                 for line_range in range(int(pack_line.product_uom_qty)):
                     new_pack_line = pack_line
-                    if pack_line.product_uom_qty > 1 and pack_line_count != pack_line.product_uom_qty:
+                    if pack_line.product_uom_qty > 1 and pack_line_count != reserved_qty:
                         pack_line_count += 1
+                        # if pack_line_count == 1:
+                        #     Quant._update_reserved_quantity(new_pack_line.product_id, new_pack_line.location_id, -pack_line.product_uom_qty,
+                        #                                     lot_id=False,
+                        #                                     package_id=new_pack_line.package_id,
+                        #                                     owner_id=new_pack_line.owner_id, strict=True)
+
                         new_pack_line = pack_line.copy(
-                            default={'product_uom_qty': 0, 'qty_done': 0})
-                        # pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
-                        new_pack_line.write({'product_uom_qty': 1, 'result_package_id': False, 'package_created': False})
+                            default={'product_uom_qty': 1, 'qty_done': 0})
+                        pack_line.product_uom_qty -= 1
+                        pack_line.qty_done = 0
+
+                        Quant._update_reserved_quantity(new_pack_line.product_id, new_pack_line.location_id, 1,
+                                                            lot_id=False,
+                                                            package_id=new_pack_line.package_id,
+                                                            owner_id=new_pack_line.owner_id, strict=True)
+
+                        new_pack_line.write({'result_package_id': False, 'package_created': False})
                     if not new_pack_line.result_package_id and not new_pack_line.package_created:
 
                         package = self.env['stock.quant.package'].create({
@@ -160,8 +176,18 @@ class StockPicking(models.Model):
                             'result_package_id': package.id,
                             'package_created': True
                         })
-                if pack_line.product_uom_qty >= 1:
-                    pack_line.write({'product_uom_qty': 1, 'qty_done': 0})
+                if pack_line.product_uom_qty >= 1 and not self._context.get('validate', False):
+                    pack_line.write({'qty_done': 0})
+                #     print("vvvvvvvvvvvvvvvvvvvv")
+                #     # Quant._update_reserved_quantity(pack_line.product_id, pack_line.location_id, -1,
+                #     #                                 lot_id=False,
+                #     #                                 package_id=pack_line.package_id,
+                #     #                                 owner_id=pack_line.owner_id, strict=True)
+                # else:
+                #     pack_line.write({'product_uom_qty': 1, 'qty_done': 1})
+
+        # for line in self.move_lines:
+        #     line._recompute_state()
 
         return package
 
