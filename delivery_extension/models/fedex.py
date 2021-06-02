@@ -21,6 +21,9 @@ class FedexRequestShipCollect(FedexRequest):
         self.RequestedShipment.ShippingChargesPayment.PaymentType = 'THIRD_PARTY'
         Payor = self.factory.Payor()
         Payor.ResponsibleParty = self.factory.Party()
+        Payor.ResponsibleParty.Contact = self.factory.Contact()
+        Payor.ResponsibleParty.Contact.PersonName = remove_accents(picking.partner_id.name) or ''
+        Payor.ResponsibleParty.Contact.PhoneNumber = picking.partner_id.phone or ''
         Payor.ResponsibleParty.Address = self.factory.Address()
         Payor.ResponsibleParty.Address.StreetLines = [remove_accents(picking.partner_id.street) or '',
                                remove_accents(picking.partner_id.street2) or '']
