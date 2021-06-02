@@ -59,7 +59,7 @@ class Provider(models.Model):
             
             # using customer's shipper number for UPS integration'
             if picking.is_ship_collect:
-                srm.shipping_charges_payment_ship_collect(picking.shipper_number)
+                srm.shipping_charges_payment_ship_collect(picking, picking.shipper_number)
             else:
                 srm.shipping_charges_payment(superself.fedex_account_number)
 
