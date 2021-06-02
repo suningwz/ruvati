@@ -36,6 +36,7 @@ class FedexRequestShipCollect(FedexRequest):
         Payor.ResponsibleParty.Address.CountryCode = picking.partner_id.country_id.code or ''
         Payor.ResponsibleParty.AccountNumber = shipping_charges_payment_account
         self.RequestedShipment.ShippingChargesPayment.Payor = Payor
+        _logger.info(self.RequestedShipment)
 
     def set_recipient(self, recipient_partner):
         Contact = self.factory.Contact()
