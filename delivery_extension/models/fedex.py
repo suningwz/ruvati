@@ -15,11 +15,6 @@ STATECODE_REQUIRED_COUNTRIES = ['US', 'CA', 'PR ', 'IN']
 
 
 class FedexRequestShipCollect(FedexRequest):
-    
-    def process_shipment(self):
-        
-        _logger.info("fedex_request....%s"%self.RequestedShipment)
-        return super(FedexRequestShipCollect, self).process_shipment()
 
     def shipping_charges_payment_ship_collect(self, picking, shipping_charges_payment_account):
         self.RequestedShipment.ShippingChargesPayment = self.factory.Payment()
