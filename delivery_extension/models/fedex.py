@@ -18,7 +18,7 @@ class FedexRequestShipCollect(FedexRequest):
 
     def shipping_charges_payment_ship_collect(self, picking, shipping_charges_payment_account):
         self.RequestedShipment.ShippingChargesPayment = self.factory.Payment()
-        self.RequestedShipment.ShippingChargesPayment.PaymentType = 'RECIPIENT'
+        self.RequestedShipment.ShippingChargesPayment.PaymentType = 'THIRD_PARTY'
         Payor = self.factory.Payor()
         Payor.ResponsibleParty = self.factory.Party()
         Payor.ResponsibleParty.Contact = self.factory.Contact()
