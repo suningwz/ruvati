@@ -22,7 +22,7 @@ class FedexRequestShipCollect(FedexRequest):
         Payor = self.factory.Payor()
         Payor.ResponsibleParty = self.factory.Party()
         Payor.ResponsibleParty.Contact = self.factory.Contact()
-        Payor.ResponsibleParty.Contact.PersonName = remove_accents(picking.sale_id.partner_id.name) or ''
+        Payor.ResponsibleParty.Contact.CompanyName = remove_accents(picking.sale_id.partner_id.name) or ''
         Payor.ResponsibleParty.Contact.PhoneNumber = picking.sale_id.partner_id.phone or ''
         Payor.ResponsibleParty.Address = self.factory.Address()
         Payor.ResponsibleParty.Address.StreetLines = [remove_accents(picking.sale_id.partner_id.street) or '',
