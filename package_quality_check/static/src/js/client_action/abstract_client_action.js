@@ -254,16 +254,15 @@ events:  {
         } else {
             if (this.actionParams.model === 'stock.picking') {
                 // returns if a non belonging product is scanned and thrown an error.
-               var prod_id = false;
-               return params.product.then(function (result) {
-                     prod_id = result.id
-                     console.log("................", result,result.id)
-                    if (_.filter(params.picking_product, function(pid){return pid == prod_id}).length == 0){
+//               var prod_id = false;
+//               return params.product.then(function (result) {
+//                     prod_id = result.id
+                     console.log("................", params.product);
+                    if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
                     return {'discard': true,};
                 }
 
-               });
-               console.log("hhhhhhhhhhh", prod_id)
+//               });
 
             }
        if (this.actionParams.model === 'stock.picking' && picking_type_code !=='internal'){
@@ -311,12 +310,12 @@ events:  {
      * @param {Object} linesActions
      * @returns {Promise}
      */
-    _step_product: function (barcode, linesActions) {
+    _step_product: async function (barcode, linesActions) {
         var self = this;
         this.currentStep = 'product';
         var errorMessage;
         var allowScan = false;
-        var product = this._isProduct(barcode);
+        var product = await this._isProduct(barcode);
         if (product) {
             if (self.currentState.name.includes('PICK') && !this.is_location_scanned) {
                 errorMessage = _t("You are expected to scan a source location before scanning a product");
