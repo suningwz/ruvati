@@ -260,7 +260,7 @@ events:  {
                 else{
                 var prod_id = params.product.id
                 }
-                console.log(".......................",params.product);
+                console.log(".......................",params.product.id);
                 if (_.filter(params.picking_product, function(pid){return pid == prod_id}).length == 0){
                     return {'discard': true,};
                 }
