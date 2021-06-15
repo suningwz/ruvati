@@ -254,6 +254,7 @@ events:  {
         } else {
             if (this.actionParams.model === 'stock.picking') {
                 // returns if a non belonging product is scanned and thrown an error.
+                console.log(".................",params.product,params.picking_product)
                 if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
                     return {'discard': true,};
                 }
@@ -326,6 +327,7 @@ events:  {
                 'method': 'get_all_picking_products',
                 'args': [self.actionParams.pickingId],
             }).then(function (result) {
+            console.log("...................",result)
             var res = self._incrementLines({'product': product, 'barcode': barcode, 'picking_product': result});
             
             // throws an error if the scanned product is not upto this picking.
