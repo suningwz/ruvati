@@ -257,9 +257,11 @@ events:  {
                var prod_id = false;
                params.product.then(function (result) {
                      prod_id = result.id
+                     console.log("................", result,result.id)
+
 
                });
-               console.log("................", result,result.id)
+               console.log("hhhhhhhhhhh", prod_id)
                 if (_.filter(params.picking_product, function(pid){return pid == prod_id}).length == 0){
                     return {'discard': true,};
                 }
