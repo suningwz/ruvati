@@ -25,12 +25,12 @@ function isChildOf(locationParent, locationChild) {
 var QualityCheckClientAction = require('stock_barcode.ClientAction');
 var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 
-events:  {
-            'click #b_submit': '_onClickSub'
-        },
-      _onClickSub : function(){
-      this._onBarcodeScanned($('#b_code').val());},
-
+//events:  {
+//            'click #b_submit': '_onClickSub'
+//        },
+//      _onClickSub : function(){
+//      this._onBarcodeScanned($('#b_code').val());},
+//
 
     init: function (parent, action) {
         this._super.apply(this, arguments);
