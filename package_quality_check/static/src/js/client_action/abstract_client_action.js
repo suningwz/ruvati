@@ -25,11 +25,11 @@ function isChildOf(locationParent, locationChild) {
 var QualityCheckClientAction = require('stock_barcode.ClientAction');
 var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 
-//events:  {
-//            'click #b_submit': '_onClickSub'
-//        },
-//      _onClickSub : function(){
-//      this._onBarcodeScanned($('#b_code').val());},
+events:  {
+            'click #b_submit': '_onClickSub'
+        },
+      _onClickSub : function(){
+      this._onBarcodeScanned($('#b_code').val());},
 
 
     init: function (parent, action) {
@@ -62,7 +62,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         var lotId = params.lot_id;
         var lotName = params.lot_name;
         var packageId = params.package_id;
-        var currentPage = this.pages[0];
+        var currentPage = this.pages[this.currentPageIndex];
         var currentPageData = this.pages[this.currentPageIndex];
 
         var res = false;
@@ -147,6 +147,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
      },
 
      _findCandidateLineToIncrement: function (params) {
+
          var picking_type_code = this.currentState.picking_type_code;
         if (this.actionParams.model === 'stock.picking' && picking_type_code ==='internal'){
             return this._process_pick_operation(params);
@@ -232,6 +233,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
     _incrementLines: function (params) {
         var picking_type_code = this.currentState.picking_type_code;
         var line = this._findCandidateLineToIncrement(params);
+
         var isNewLine = false;
         if (line) {
             // Update the line with the processed quantity.
@@ -257,7 +259,6 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 //               var prod_id = false;
 //               return params.product.then(function (result) {
 //                     prod_id = result.id
-                     console.log("................", params.product);
                     if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
                     return {'discard': true,};
                 }
@@ -334,7 +335,6 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 'args': [self.actionParams.pickingId],
             }).then(function (result) {
             var res = self._incrementLines({'product': product, 'barcode': barcode, 'picking_product': result});
-            
             // throws an error if the scanned product is not upto this picking.
             if (res.discard) {
                 errorMessage = _t("You are expected to scan products belongs to this picking");
