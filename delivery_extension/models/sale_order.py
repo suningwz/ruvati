@@ -12,6 +12,7 @@ class SaleOrder(models.Model):
     shipper_number = fields.Char(string="Shipper No.")
     products = fields.Char(string="Products")
     is_back_order = fields.Boolean(string="Back Order")
+    duplicate_order = fields.Boolean("Duplicate Order", copy=False)
 
     def message_notify(self, *,
                        partner_ids=False, parent_id=False, model=False, res_id=False,
@@ -43,6 +44,11 @@ class SaleOrder(models.Model):
     @api.model
     def create(self, vals):
         internal_ref = []
+        if vals.get('client_order_ref', False):
+            existing_order_ids = self.search([('client_order_ref', '=', vals.get('client_order_ref', False))])
+            if len(existing_order_ids) >= 1:
+                vals.update({'duplicate_order': True})
+
         if vals.get('order_line', []):
             for line in vals.get('order_line', []):
                 if line[2].get('product_id', False):
@@ -58,6 +64,12 @@ class SaleOrder(models.Model):
         
     def write(self, vals):
         internal_ref = []
+        if vals.get('client_order_ref', False):
+            existing_order_ids = self.search([('client_order_ref', '=', vals.get('client_order_ref', False))])
+            if len(existing_order_ids) >= 1:
+                vals.update({'duplicate_order': True})
+            else:
+                vals.update({'duplicate_order': False})
         if vals.get('order_line', []):
             for line in vals.get('order_line', []):
                 if line[2]:

@@ -13,7 +13,9 @@
                     <field name="is_ship_collect" invisible="1"/>
                 </xpath>
                  <xpath expr="//field[@name='origin']" position="after">
-                    <field name="transaction_id" readonly="True"/>
+                    <field name="transaction_id" invisible="1" readonly="True"/>
+                     <field name="customer_po_number"/>
+                     <field name="duplicate_order" attrs="{'invisible':[('duplicate_order','=',False)]}"/>
                 </xpath>
                 <xpath expr="//button[@name='print_return_label']" position="after">
                     <button name="action_create_label" string="Create Label" type="object" attrs="{'invisible': [('is_create_label', '!=', True)]}"/>
@@ -23,6 +25,18 @@
                 </button>
             </field>
         </record>
+
+        <record id="vpicktree_delivery_extension_inherit" model="ir.ui.view">
+            <field name="name">vpicktree.inherit</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.vpicktree"/>
+            <field name="arch" type="xml">
+                <field name="origin" position="after">
+                    <field name="customer_po_number"/>
+                </field>
+            </field>
+        </record>
+
         
         <record model="ir.ui.view" id="view_quant_package_form_inherit">
             <field name="name">view.quant.package.form.inherit</field>
@@ -35,5 +49,18 @@
                 </xpath>
             </field>
         </record>
+
+        <record id="view_picking_inherit_search_extension" model="ir.ui.view">
+            <field name="name">stock.picking.extension.search</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='draft']" position="before">
+                    <filter name="duplicate_order" string="Duplicate Order" domain="[('duplicate_order','=',True)]"/>
+                </xpath>
+
+            </field>
+        </record>
+
     </data>
 </odoo>

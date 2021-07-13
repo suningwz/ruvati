@@ -15,6 +15,8 @@ class StockPicking(models.Model):
     is_ship_collect = fields.Boolean(string="Ship Collect")
     create_label_on_validate = fields.Boolean(string="Create Label-validate")
     transaction_id = fields.Char("Transaction ID")
+    duplicate_order = fields.Boolean("Duplicate Order", related="sale_id.duplicate_order")
+    customer_po_number = fields.Char(string="Customer PO", related="sale_id.client_order_ref")
     # string change to avoid custom filter confusions
     backorder_ids = fields.One2many('stock.picking', 'backorder_id', 'List of Back Orders')
 

@@ -7,6 +7,7 @@
             <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='client_order_ref']" position="after">
+                    <field name="duplicate_order"/>
                     <field name="is_back_order" attrs="{'readonly':[('state','=','sale')]}"/>
                     <field name="is_ship_collect"/>
                     <field name="carrier_id"/>
@@ -29,6 +30,7 @@
                 </field>
                 <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
                     <filter string="Back Order" name="is_back_order" domain="[('is_back_order', '=', True)]"/>
+                    <filter string="Duplicate Order" name="is_duplicate_order" domain="[('duplicate_order', '=', True)]"/>
                 </xpath>
             </field>
         </record>
