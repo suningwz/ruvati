@@ -30,7 +30,7 @@
                 </field>
                 <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
                     <filter string="Back Order" name="is_back_order" domain="[('is_back_order', '=', True)]"/>
-                    <filter string="Duplicate Order" name="is_duplicate_order" domain="[('duplicate_order', '=', True)]"/>
+<!--                    <filter string="Duplicate Order" name="is_duplicate_order" domain="[('duplicate_order', '=', True)]"/>-->
                 </xpath>
             </field>
         </record>
@@ -75,6 +75,35 @@
                 </field>
             </field>
         </record>
+
+        <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+            <field name="domain">[('duplicate_order','=',False)]</field>
+        </record>
+
+        <record id="sale.action_orders" model="ir.actions.act_window">
+            <field name="domain">[('state', 'not in', ('draft', 'sent', 'cancel')),('duplicate_order','=',False)]</field>
+        </record>
+
+        <record id="action_duplicate_orders" model="ir.actions.act_window">
+            <field name="name">Duplicate Orders</field>
+            <field name="res_model">sale.order</field>
+            <field name="view_mode">tree,kanban,form,calendar,pivot,graph,activity</field>
+            <field name="search_view_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+            <field name="context">{'search_default_my_quotation': 1}</field>
+            <field name="domain">[('duplicate_order','=',True)]</field>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                No duplicate orders!
+              </p>
+            </field>
+        </record>
+
+
+        <menuitem id="menu_sale_duplicate_orders"
+                action="delivery_extension.action_duplicate_orders"
+                parent="sale.sale_order_menu"
+                sequence="5" groups="sales_team.group_sale_salesman"/>
+
 
     </data>
 </odoo>
