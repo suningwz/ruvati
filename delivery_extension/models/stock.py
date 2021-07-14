@@ -121,6 +121,14 @@ class StockPicking(models.Model):
             rec.send_data(shipment_data)
 
         return res
+    
+    def action_assign(self):
+        for rec in self:
+            if rec.duplicate_order:
+                continue
+            super(StockPicking, rec).action_assign()
+        return True
+
 
     
 #    @api.depends('picking_type_id')

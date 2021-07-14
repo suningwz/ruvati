@@ -18,7 +18,7 @@
                      <field name="duplicate_order" attrs="{'invisible':[('duplicate_order','=',False)]}"/>
                 </xpath>
                 <xpath expr="//button[@name='print_return_label']" position="after">
-                    <button name="action_create_label" string="Create Label" type="object" attrs="{'invisible': [('is_create_label', '!=', True)]}"/>
+                    <button name="action_create_label" string="Create Label" type="object" attrs="{'invisible': ['|',('is_create_label', '!=', True),('duplicate_order','=',True)]}"/>
                 </xpath>
                 <button name="send_to_shipper" position="attributes">
                     <attribute name="invisible">1</attribute>
