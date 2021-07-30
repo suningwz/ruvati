@@ -56,7 +56,7 @@
                 </field>
                 <field name="partner_id" position="after">
                     <field name="partner_shipping_id" readonly="1"/>
-                    <field name="products" readonly="1"/>
+                    <field name="products"/>
                 </field>
             </field>
         </record>
@@ -71,7 +71,7 @@
                 </field>
                 <field name="partner_id" position="after">
                     <field name="partner_shipping_id" readonly="1"/>
-                    <field name="products" readonly="1"/>
+                    <field name="products"/>
                 </field>
             </field>
         </record>
