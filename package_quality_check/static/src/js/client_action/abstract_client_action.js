@@ -25,12 +25,12 @@ function isChildOf(locationParent, locationChild) {
 var QualityCheckClientAction = require('stock_barcode.ClientAction');
 var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 
-//events:  {
-//            'click #b_submit': '_onClickSub'
-//        },
-//      _onClickSub : function(){
-//      this._onBarcodeScanned($('#b_code').val());},
-//
+events:  {
+            'click #b_submit': '_onClickSub'
+        },
+      _onClickSub : function(){
+      this._onBarcodeScanned($('#b_code').val());},
+
 
     init: function (parent, action) {
         this._super.apply(this, arguments);
@@ -63,12 +63,12 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         var lotName = params.lot_name;
         var packageId = params.package_id;
         var currentPage = this.pages[this.currentPageIndex];
-        var currentPageData = this.pages[this.currentPageIndex];
+        var currentPageData = this.pages[0];
 
         var res = false;
-        var loop_time = currentPage.lines.length;
+        var loop_time = currentPageData.lines.length;
         for (var z = 0; z < loop_time; z++) {
-            var lineInCurrentPage = currentPage.lines[z];
+            var lineInCurrentPage = currentPageData.lines[z];
             if (lineInCurrentPage.qty_done===1){
             continue;
             }
@@ -89,8 +89,8 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 //                    res['is_updated'] = 1;
                     if(this.currentPageIndex > 0){
                         currentPage.lines.splice(z,1);
-                        res.location_id = {'id':currentPageData.location_id,'display_name':currentPageData.location_name};
-                        currentPageData.lines.push(res);
+                        res.location_id = {'id':currentPage.location_id,'display_name':currentPage.location_name};
+                        currentPage.lines.push(res);
                     }
                     break;
 
@@ -150,7 +150,9 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 
          var picking_type_code = this.currentState.picking_type_code;
         if (this.actionParams.model === 'stock.picking' && picking_type_code ==='internal'){
-            return this._process_pick_operation(params);
+            var process_result = this._process_pick_operation(params);
+
+            return process_result
         }
         var product = params.product;
         var lotId = params.lot_id;
@@ -233,7 +235,6 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
     _incrementLines: function (params) {
         var picking_type_code = this.currentState.picking_type_code;
         var line = this._findCandidateLineToIncrement(params);
-
         var isNewLine = false;
         if (line) {
             // Update the line with the processed quantity.
@@ -261,6 +262,9 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 //                     prod_id = result.id
                     if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
                     return {'discard': true,};
+                }
+                else{
+                return {'all_scan': true,};
                 }
 
 //               });
@@ -339,7 +343,11 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
             if (res.discard) {
                 errorMessage = _t("You are expected to scan products belongs to this picking");
                 return Promise.reject(errorMessage);
-            } 
+            }
+            if (res.all_scan) {
+                errorMessage = _t("You may scanned all lines");
+                return Promise.reject(errorMessage);
+            }
 //            else {
 //                self._save();
 //            }
