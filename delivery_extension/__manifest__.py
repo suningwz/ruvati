@@ -15,6 +15,7 @@
             "views/stock_view.xml",
             "views/res_partner_view.xml",
             "views/sale_order_view.xml",
+            'reports/picking_operations.xml',
             'reports/report_location_barcode.xml'
 
     ],
