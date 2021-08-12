@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_check_availability_wizard" model="ir.ui.view">
+        <field name="name">Check Availability</field>
+        <field name="model">check.reserved.picking</field>
+        <field name="arch" type="xml">
+            <form string="Check Availability">
+                <p>
+                It will check the current availability of the pickings.
+                </p>
+                <footer>
+                    <button name="action_check_reserved_pick" string="Check Availability" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_check_availability" model="ir.actions.act_window">
+        <field name="name">Check Availability</field>
+        <field name="res_model">check.reserved.picking</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem action="action_check_availability" id="menu_check_availability" parent="stock.menu_stock_warehouse_mgmt" sequence="135"/>
+
+
+</odoo>
