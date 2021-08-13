@@ -40,32 +40,6 @@ class StockPicking(models.Model):
                     rec.with_context({'assign': True}).put_in_pack()
         return res
 
-    # def put_in_pack(self):
-    #     self.ensure_one()
-    #     if self.state not in ('done', 'cancel'):
-    #         picking_move_lines = self.move_line_ids
-    #         if (
-    #             not self.picking_type_id.show_reserved
-    #             and not self.env.context.get('barcode_view')
-    #         ):
-    #             picking_move_lines = self.move_line_nosuggest_ids
-    #
-    #         move_line_ids = picking_move_lines.filtered(lambda ml:
-    #             float_compare(ml.qty_done, 0.0, precision_rounding=ml.product_uom_id.rounding) > 0
-    #             and not ml.result_package_id
-    #         )
-    #         if not move_line_ids:
-    #             move_line_ids = picking_move_lines.filtered(lambda ml: float_compare(ml.product_uom_qty, 0.0,
-    #                                  precision_rounding=ml.product_uom_id.rounding) > 0 and float_compare(ml.qty_done, 0.0,
-    #                                  precision_rounding=ml.product_uom_id.rounding) == 0)
-    #         if move_line_ids:
-    #             res = self._pre_put_in_pack_hook(move_line_ids)
-    #
-    #             res = self._put_in_pack(move_line_ids)
-    #             return res
-    #         else:
-    #             raise UserError(_("Please add 'Done' qantitites to the picking to create a new pack."))
-
     def put_in_pack(self):
         self.ensure_one()
         if self.state not in ('done', 'cancel'):
