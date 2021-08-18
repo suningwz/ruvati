@@ -23,12 +23,12 @@ class BatchPickingReport(models.AbstractModel):
                 'pick_qty': int(move.product_uom_qty),
                 'name': move.picking_id.name,
                 'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in
-                                 move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc][:3],
+                                 move.product_id.stock_quant_ids.sorted(key=lambda l:l.location_id.name) if i.location_id.usage == 'internal' and  i.location_id in loc][:3],
             })
         for r in [list(data.values()) for data in result.values()]:
             batch_pick_list.extend(r)
         batch_pick_list = sum(batch_pick_list, [])
-        batch_pick_list.sort(key=lambda r: r['location_qty'] and r['location_qty'][0][0] or '')
+        # batch_pick_list.sort(key=lambda r: r['location_qty'] and r['location_qty'][0][0] or '')
         return batch_pick_list
 
     def get_intern_picking_list(self, batch_pick):
@@ -42,7 +42,7 @@ class BatchPickingReport(models.AbstractModel):
                                          'name': move.picking_id.name,
                                         'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in
                                  move.product_id.stock_quant_ids if i.location_id.usage == 'internal' and  i.location_id in loc]})
-        return  batch_pick_dict
+        return batch_pick_dict
 
     @api.model
     def _get_report_values(self, docids, data=None):
