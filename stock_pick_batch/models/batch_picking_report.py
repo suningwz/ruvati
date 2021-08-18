@@ -18,7 +18,9 @@ class BatchPickingReport(models.AbstractModel):
             loc |= self.env['stock.location'].search([('id', 'child_of', warehouse.lot_stock_id.id)])
         for move in batch_pick.picking_ids.mapped('move_lines'):
             quants = []
-            for quant in move.product_id.stock_quant_ids.sorted(key=lambda l: l.quantity and l.location_id.name):
+            stock_quants = move.product_id.stock_quant_ids.sorted(key=lambda l: l.quantity, reverse=True)
+            stock_quants = stock_quants[:3].sorted(key=lambda l: l.location_id.display_name)
+            for quant in stock_quants:
                 if quant.location_id.usage == 'internal' and quant.location_id in loc:
                     quants.append(quant)
             result.setdefault(move.location_id.id, {}).setdefault(move.product_id, []).append({
