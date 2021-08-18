@@ -17,18 +17,18 @@ class BatchPickingReport(models.AbstractModel):
         for warehouse in search_warehouse:
             loc |= self.env['stock.location'].search([('id', 'child_of', warehouse.lot_stock_id.id)])
         for move in batch_pick.picking_ids.mapped('move_lines'):
-            quants = []
-            stock_quants = move.product_id.stock_quant_ids.sorted(key=lambda l: l.quantity, reverse=True)
+            # quants = []
+            stock_quants = move.product_id.stock_quant_ids.filtered(lambda q: q.location_id.usage == 'internal' and q.location_id in loc).sorted(key=lambda l: l.quantity, reverse=True)
             stock_quants = stock_quants[:3].sorted(key=lambda l: l.location_id.display_name)
-            for quant in stock_quants:
-                if quant.location_id.usage == 'internal' and quant.location_id in loc:
-                    quants.append(quant)
+            # for quant in stock_quants:
+            #     if quant.location_id.usage == 'internal' and quant.location_id in loc:
+            #         quants.append(quant)
             result.setdefault(move.location_id.id, {}).setdefault(move.product_id, []).append({
                 'scheduled_date': move.picking_id.scheduled_date,
                 'SKU': move.product_id.default_code,
                 'pick_qty': int(move.product_uom_qty),
                 'name': move.picking_id.name,
-                'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in quants][:3],
+                'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in stock_quants][:3],
             })
         for r in [list(data.values()) for data in result.values()]:
             batch_pick_list.extend(r)
