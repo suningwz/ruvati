@@ -62,13 +62,18 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         var lotId = params.lot_id;
         var lotName = params.lot_name;
         var packageId = params.package_id;
-        var currentPage = this.pages[0];
-        var currentPageData = this.pages[this.currentPageIndex];
+        var currentPage = this.pages[this.currentPageIndex];
+        if (currentPage.lines.length ==0){
+                var currentPageData = this.pages[0];
+        }
+        else{
+            var currentPageData = this.pages[this.currentPageIndex];
+        }
 
         var res = false;
-        var loop_time = currentPage.lines.length;
+        var loop_time = currentPageData.lines.length;
         for (var z = 0; z < loop_time; z++) {
-            var lineInCurrentPage = currentPage.lines[z];
+            var lineInCurrentPage = currentPageData.lines[z];
             if (lineInCurrentPage.qty_done===1){
             continue;
             }
@@ -89,8 +94,8 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 //                    res['is_updated'] = 1;
                     if(this.currentPageIndex > 0){
                         currentPage.lines.splice(z,1);
-                        res.location_id = {'id':currentPageData.location_id,'display_name':currentPageData.location_name};
-                        currentPageData.lines.push(res);
+                        res.location_id = {'id':currentPage.location_id,'display_name':currentPage.location_name};
+                        currentPage.lines.push(res);
                     }
                     break;
 
@@ -147,9 +152,12 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
      },
 
      _findCandidateLineToIncrement: function (params) {
+        console.log("sssssssssssssssssssssssssss")
          var picking_type_code = this.currentState.picking_type_code;
         if (this.actionParams.model === 'stock.picking' && picking_type_code ==='internal'){
-            return this._process_pick_operation(params);
+            var process_result = this._process_pick_operation(params);
+
+            return process_result
         }
         var product = params.product;
         var lotId = params.lot_id;
@@ -254,9 +262,18 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         } else {
             if (this.actionParams.model === 'stock.picking') {
                 // returns if a non belonging product is scanned and thrown an error.
-                if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
+//               var prod_id = false;
+//               return params.product.then(function (result) {
+//                     prod_id = result.id
+                    if (_.filter(params.picking_product, function(pid){return pid == params.product.id}).length == 0){
                     return {'discard': true,};
                 }
+                else{
+                return {'all_scan': true,};
+                }
+
+//               });
+
             }
        if (this.actionParams.model === 'stock.picking' && picking_type_code !=='internal'){
             isNewLine = true;
@@ -303,12 +320,12 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
      * @param {Object} linesActions
      * @returns {Promise}
      */
-    _step_product: function (barcode, linesActions) {
+    _step_product: async function (barcode, linesActions) {
         var self = this;
         this.currentStep = 'product';
         var errorMessage;
         var allowScan = false;
-        var product = this._isProduct(barcode);
+        var product = await this._isProduct(barcode);
         if (product) {
             if (self.currentState.name.includes('PICK') && !this.is_location_scanned) {
                 errorMessage = _t("You are expected to scan a source location before scanning a product");
@@ -327,12 +344,15 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 'args': [self.actionParams.pickingId],
             }).then(function (result) {
             var res = self._incrementLines({'product': product, 'barcode': barcode, 'picking_product': result});
-            
             // throws an error if the scanned product is not upto this picking.
             if (res.discard) {
                 errorMessage = _t("You are expected to scan products belongs to this picking");
                 return Promise.reject(errorMessage);
-            } 
+            }
+            if (res.all_scan) {
+                errorMessage = _t("You may scanned all lines");
+                return Promise.reject(errorMessage);
+            }
 //            else {
 //                self._save();
 //            }

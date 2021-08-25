@@ -30,9 +30,10 @@ class StockPicking(models.Model):
                         out_picking.button_validate()
                         if out_picking.state == 'done':
                             pick_picking = out_picking.sale_id.picking_ids.filtered(lambda r: r.picking_type_id == self.picking_type_id.warehouse_id.pick_type_id)
+
                             if pick_picking and all(pick_picking.mapped('carrier_tracking_ref')):
                                 out_picking.write({'carrier_id': pick_picking[0].carrier_id and pick_picking[0].carrier_id.id or False,
-                                                   'carrier_tracking_ref': ",".join(out_picking.package_ids.mapped('carrier_tracking_ref'))
+                                                   'carrier_tracking_ref': pick_picking[0].carrier_tracking_ref
                                     })
                         if out_picking.sale_id.invoice_status == 'to invoice':
                             out_picking.sale_id and out_picking.sale_id._create_invoices()
