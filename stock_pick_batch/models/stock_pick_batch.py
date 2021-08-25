@@ -113,7 +113,6 @@ class StockPickingBatch(models.Model):
 class StockPicking(models.Model):
     _inherit = "stock.picking"
     
-    customer_po_number = fields.Char(string="Customer PO Number", related="sale_id.client_order_ref")
     dealer = fields.Many2one('res.partner', string="Dealer", related="sale_id.partner_id")
     product_sku = fields.Char(string="Product SKU", compute="_compute_product_sku")
     qty_order = fields.Char(string="Quantity", compute="_compute_product_sku")
