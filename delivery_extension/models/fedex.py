@@ -16,11 +16,24 @@ STATECODE_REQUIRED_COUNTRIES = ['US', 'CA', 'PR ', 'IN']
 
 class FedexRequestShipCollect(FedexRequest):
 
-    def shipping_charges_payment_ship_collect(self, shipping_charges_payment_account):
+    def shipping_charges_payment_ship_collect(self, picking, shipping_charges_payment_account):
         self.RequestedShipment.ShippingChargesPayment = self.factory.Payment()
-        self.RequestedShipment.ShippingChargesPayment.PaymentType = 'RECIPIENT'
+        self.RequestedShipment.ShippingChargesPayment.PaymentType = 'THIRD_PARTY'
         Payor = self.factory.Payor()
         Payor.ResponsibleParty = self.factory.Party()
+        Payor.ResponsibleParty.Contact = self.factory.Contact()
+        Payor.ResponsibleParty.Contact.CompanyName = remove_accents(picking.sale_id.partner_id.name) or ''
+        Payor.ResponsibleParty.Contact.PhoneNumber = picking.sale_id.partner_id.phone or ''
+        Payor.ResponsibleParty.Address = self.factory.Address()
+        Payor.ResponsibleParty.Address.StreetLines = [remove_accents(picking.sale_id.partner_id.street) or '',
+                               remove_accents(picking.sale_id.partner_id.street2) or '']
+        Payor.ResponsibleParty.Address.City = remove_accents(picking.sale_id.partner_id.city) or ''
+        if picking.sale_id.partner_id.country_id.code in STATECODE_REQUIRED_COUNTRIES:
+            Payor.ResponsibleParty.Address.StateOrProvinceCode = picking.sale_id.partner_id.state_id.code or ''
+        else:
+            Payor.ResponsibleParty.Address.StateOrProvinceCode = ''
+        Payor.ResponsibleParty.Address.PostalCode = picking.sale_id.partner_id.zip or ''
+        Payor.ResponsibleParty.Address.CountryCode = picking.sale_id.partner_id.country_id.code or ''
         Payor.ResponsibleParty.AccountNumber = shipping_charges_payment_account
         self.RequestedShipment.ShippingChargesPayment.Payor = Payor
 

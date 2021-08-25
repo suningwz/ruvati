@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="report_shipping_ref" inherit_id="stock.report_picking">
+            <xpath expr="//div[hasclass('justify-content-end')]" position="before">
+                <div t-if="o.internal_transfer_id.reference" class="row justify-content-end mb16" style="margin-right:30px;" name="ref_box">
+                    <strong>Ref ID:</strong> <span t-esc="o.internal_transfer_id.reference"/>
+                </div>
+
+            </xpath>
+
+        </template>
+
+    </data>
+
+</odoo>

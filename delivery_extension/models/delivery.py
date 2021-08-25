@@ -47,7 +47,7 @@ class Provider(models.Model):
             superself = self.sudo()
             srm.web_authentication_detail(superself.fedex_developer_key, superself.fedex_developer_password)
             if picking.is_ship_collect:
-                srm.client_detail(picking.shipper_number, superself.fedex_meter_number)
+                srm.client_detail(superself.fedex_account_number, superself.fedex_meter_number)
             else:
                 srm.client_detail(superself.fedex_account_number, superself.fedex_meter_number)
             srm.transaction_detail(picking.id)
@@ -59,7 +59,7 @@ class Provider(models.Model):
             
             # using customer's shipper number for UPS integration'
             if picking.is_ship_collect:
-                srm.shipping_charges_payment_ship_collect(picking.shipper_number)
+                srm.shipping_charges_payment_ship_collect(picking, picking.shipper_number)
             else:
                 srm.shipping_charges_payment(superself.fedex_account_number)
 
@@ -67,7 +67,6 @@ class Provider(models.Model):
             order = picking.sale_id
             company = order.company_id or picking.company_id or self.env.company
             order_currency = picking.sale_id.currency_id or picking.company_id.currency_id
-
             net_weight = self._fedex_convert_weight(picking.shipping_weight, self.fedex_weight_unit)
 
             # Commodities for customs declaration (international shipping)
