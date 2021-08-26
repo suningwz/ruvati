@@ -19,7 +19,7 @@ class SaleOrder(models.Model):
     bill_of_lading_number = fields.Char("Bill Of Lading")
     transportation_method_code = fields.Char("Transportation Code")
     ship_via_description = fields.Selection([('UPS', 'UPS'), ('Fedex', 'Fedex')], string="Ship Via")
-    order_shipment_status = fields.Selection([('P', 'P')], string="Shipment Status")
+    # order_shipment_status = fields.Selection([('P', 'P')], string="Shipment Status")
     order_card_id = fields.Char('Order Card ID')
 
     def order_to_review(self):
