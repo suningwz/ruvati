@@ -17,7 +17,8 @@
             "views/sale_order_view.xml",
             'reports/picking_operations.xml',
             'reports/report_location_barcode.xml',
-            'wizards/check_availability.xml'
+            'wizards/check_availability.xml',
+            'wizards/order_confirm_multi.xml'
 
     ],
     'demo_xml': [],

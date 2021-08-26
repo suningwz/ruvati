@@ -28,11 +28,11 @@ class SaleOrder(models.Model):
         elif any(line.price_unit != line.sale_approved_price for line in self.order_line) and self.state == 'draft':
             self.write({'state': 'to_review'})
 
-    def write(self, vals):
-        res = super(SaleOrder, self).write(vals)
-        if self.edi_order:
-            self.order_to_review()
-        return res
+    # def write(self, vals):
+    #     res = super(SaleOrder, self).write(vals)
+    #     if self.edi_order:
+    #         self.order_to_review()
+    #     return res
 
     def process_order_data(self, order_data):
         data = order_data.get('PullSalesOrdersOutResult', {})
