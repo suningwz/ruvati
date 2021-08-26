@@ -172,11 +172,11 @@ class StockPicking(models.Model):
 
             #Header
             l = zpl.Label(100, 60)
-            l.origin(0, 3)
+            l.origin(0, 6)
             l.write_text("Packing Slip", char_height=2, char_width=2, line_width=60, justification='C')
             l.endorigin()
 
-            l.origin(4, 7)
+            l.origin(4, 4)
             l.write_text("Ship TO: %s" % self.partner_id.street, char_height=2, char_width=2, line_width=60, justification='L')
 
             l.endorigin()
