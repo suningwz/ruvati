@@ -26,6 +26,7 @@ class BatchPickingReport(models.AbstractModel):
             result.setdefault(move.location_id.id, {}).setdefault(move.product_id, []).append({
                 'scheduled_date': move.picking_id.scheduled_date,
                 'SKU': move.product_id.default_code,
+                'sale_id': move.picking_id.sale_id.name,
                 'pick_qty': int(move.product_uom_qty),
                 'name': move.picking_id.name,
                 'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in stock_quants][:3],

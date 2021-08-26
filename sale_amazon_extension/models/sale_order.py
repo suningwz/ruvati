@@ -45,3 +45,8 @@ class SaleOrder(models.Model):
             }
         }
 
+    def action_cancel(self):
+        res = super(SaleOrder, self).action_cancel()
+        self.write({'amazon_cancellation_pending': False})
+        return res
+

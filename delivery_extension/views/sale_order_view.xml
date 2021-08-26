@@ -34,6 +34,7 @@
                 <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
                     <filter string="Back Order" name="is_back_order" domain="[('is_back_order', '=', True)]"/>
 <!--                    <filter string="Duplicate Order" name="is_duplicate_order" domain="[('duplicate_order', '=', True)]"/>-->
+                    <filter string="Shipped" name="shipped" domain="[('shipment_status','=','done')]"/>
                 </xpath>
             </field>
         </record>
@@ -61,6 +62,9 @@
                     <field name="partner_shipping_id" readonly="1"/>
                     <field name="products"/>
                 </field>
+                <field name="state" position="after">
+                    <field name="shipment_status"/>
+                </field>
             </field>
         </record>
         
@@ -76,6 +80,10 @@
                     <field name="partner_shipping_id" readonly="1"/>
                     <field name="products"/>
                 </field>
+                <field name="state" position="after">
+                    <field name="shipment_status"/>
+                </field>
+
             </field>
         </record>
 
