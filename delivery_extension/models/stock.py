@@ -68,57 +68,8 @@ class StockPicking(models.Model):
     def action_done(self):
         res = super(StockPicking, self).action_done()
         for rec in self:
-            if not rec.sale_id.edi_order:
-                break
-            invoice_partner_id = rec.sale_id.partner_invoice_id
-            shipment_data = {
-                "BSISerObjects.bsishipments": {
-
-                    "pro_number": rec.sale_id.pro_number,
-                    "bill_of_lading_number": rec.sale_id.bill_of_lading_number,
-                    "ship_via_description": rec.carrier_id.name,
-                    "orders": [{
-                        'order_info': {
-                            'order_date': rec.sale_id.date_order.strftime('%Y-%m-%d'),
-                            'customer_number': rec.sale_id.customer_id,
-                            "ship_date": rec.scheduled_date.strftime('%Y-%m-%d'),
-                            'ship_to_address': {
-                                "name": rec.partner_id.name,
-                                "address_1": rec.partner_id.street,
-                                "address_2": rec.partner_id.street2,
-                                "city": rec.partner_id.city,
-                                "state": rec.partner_id.state_id.code,
-                                "zip": rec.partner_id.zip,
-                                "country": rec.partner_id.country_id.code,
-
-                            },
-                            'billing_address': {
-                                "name": invoice_partner_id.name,
-                                "address_1": invoice_partner_id.street,
-                                "address_2": invoice_partner_id.street2,
-                                "city": invoice_partner_id.city,
-                                "state": invoice_partner_id.state_id.code,
-                                "zip": invoice_partner_id.zip,
-                                "country": invoice_partner_id.country_id.code,
-
-                            },
-                            'ship_from_address': {
-                                "name": rec.company_id.name,
-                                "address_1": rec.company_id.street,
-                                "address_2": rec.company_id.street2,
-                                "city": rec.company_id.city,
-                                "state": rec.company_id.state_id.code,
-                                "zip": rec.company_id.zip,
-                                "country": rec.company_id.country_id.code,
-
-                            },
-                            'cartons': rec._get_cartons()
-                        }
-
-                    }]
-                }
-            }
-            rec.send_data(shipment_data)
+            if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
+                rec.sale_id.shipment_status = rec.state
 
         return res
     
@@ -126,8 +77,11 @@ class StockPicking(models.Model):
         for rec in self:
             if rec.duplicate_order:
                 continue
-            super(StockPicking, rec).action_assign()
-        return True
+        res = super(StockPicking, self).action_assign()
+        for rec in self:
+            if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
+                rec.sale_id.shipment_status = rec.state
+        return res
 
 
     

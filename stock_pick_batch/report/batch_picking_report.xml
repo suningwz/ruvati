@@ -54,30 +54,36 @@
                                                     <span t-esc="pick['scheduled_date']"/>
                                                 </td>
                                                 <td style="float:left;width:15%;">
-                                                    <strong>Sale ID :</strong>
+                                                    <strong>Pick ID :</strong>
                                                 </td>
                                                 <td style="float:left;width:20%;">
                                                     <span t-esc="pick['name']"/>
                                                 </td>
                                             </tr>
                                             <tr>
+                                                <td style="float:left;width:20%;">
+                                                    <strong>Order ID: </strong>
+                                                </td>
+                                                <td style="float:left;width:45%;">
+                                                    <span t-esc="pick['sale_id']"/>
+                                                </td>
+
+                                            </tr>
+                                            <tr>
                                                 <td style="float:left;">
-                                                    <h4><strong>Items :</strong></h4>
+                                                    <strong><span style="font-size: 25px;" t-esc="pick['SKU']"/></strong>
                                                 </td>
                                                  <td style="float:right;">
                                                     <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;' % ('Code128', pick['name'], 390, 110)" style="float:right;width:390px;height:110px" alt="Barcode"/>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td>
-                                                    <div style="float-left;">
-                                                        <strong>SKU : </strong><span t-esc="pick['SKU']"/>
-                                                    </div>
-                                                    <div style="float-left;">
-                                                        <strong>Pick Qty : </strong>
-                                                        <span t-esc="pick['pick_qty']"
-                                                              class="numberCircle  badge badge-pill"/>
-                                                    </div>
+                                                <td style="float-left;width:20%;">
+<!--                                                    <div style="float-left;">-->
+<!--                                                        <strong>SKU : </strong><span t-esc="pick['SKU']"/>-->
+<!--                                                    </div>-->
+                                                    <span style="font-size: 15px;"><strong>Pick Qty : </strong></span>
+                                                        <strong><span style="font-size: 25px;" t-esc="pick['pick_qty']"/></strong>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -86,8 +92,8 @@
                                             <tr t-if="pick['location_qty']" style="font-size:13px;">
                                                 <t t-foreach="pick['location_qty']" t-as="loc_qty">
                                                     <td style="float:left;">
-                                                        <span t-esc="loc_qty[0]"/>
-                                                        <span t-esc="loc_qty[1]" class="dot badge badge-pill"/>
+                                                        <span style="font-size: 20px;" t-esc="loc_qty[0]"/>
+                                                        <span style="font-size: 20px;" t-esc="loc_qty[1]" class="dot badge badge-pill"/>
                                                     </td>
                                                 </t>
                                             </tr>
@@ -114,7 +120,7 @@
                                                     <span t-esc="pick.scheduled_date"/>
                                                 </td>
                                                 <td style="float:left;width:15%;">
-                                                    <strong>Sale ID :</strong>
+                                                    <strong>Pick ID :</strong>
                                                 </td>
                                                 <td style="float:left;width:20%;">
                                                     <span t-esc="pick.name"/>

@@ -13,10 +13,18 @@
                     <field name="is_ship_collect" invisible="1"/>
                 </xpath>
                  <xpath expr="//field[@name='origin']" position="after">
+                     <field name="sale_id" readonly="1"/>
                     <field name="transaction_id" invisible="1" readonly="True"/>
                      <field name="customer_po_number"/>
-                     <field name="duplicate_order" attrs="{'invisible':[('duplicate_order','=',False)]}"/>
+
                 </xpath>
+                <xpath expr="//field[@name='origin']" position="before">
+                    <field name="duplicate_order"/>
+                </xpath>
+                <xpath expr="//field[@name='origin']" position="attributes">
+                    <attribute name="attrs">{'invisible':[('sale_id','!=', False)]}</attribute>
+                </xpath>
+
                 <xpath expr="//button[@name='print_return_label']" position="after">
                     <button name="action_create_label" string="Create Label" type="object" attrs="{'invisible': ['|',('is_create_label', '!=', True),('duplicate_order','=',True)]}"/>
                 </xpath>

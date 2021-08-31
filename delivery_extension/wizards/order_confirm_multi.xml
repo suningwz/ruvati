@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_action_confirm_multi" model="ir.ui.view">
+        <field name="name">Confirm Sale</field>
+        <field name="model">order.confirm.multi</field>
+        <field name="arch" type="xml">
+            <form string="Confirm Sale">
+                <p>
+                It will Confirm the selected quotations.
+                </p>
+                <footer>
+                    <button name="action_confirm_sale" string="Confirm" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_order_multi_confirm" model="ir.actions.act_window">
+        <field name="name">Confirm Sale</field>
+        <field name="res_model">order.confirm.multi</field>
+        <field name="binding_model_id" ref="model_sale_order"/>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+
+</odoo>
