@@ -75,9 +75,11 @@ class StockPicking(models.Model):
     
     def action_assign(self):
         for rec in self:
-            if rec.duplicate_order:
+            if rec.duplicate_order or rec.is_back_order:
+                res = False
                 continue
-        res = super(StockPicking, self).action_assign()
+            else:
+                res = super(StockPicking, rec).action_assign()
         for rec in self:
             if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
                 rec.sale_id.shipment_status = rec.state
