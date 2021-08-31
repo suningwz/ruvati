@@ -355,7 +355,10 @@ class StockPicking(models.Model):
         cr = self._cr
         cr.execute("select move_dest_id from stock_move_move_rel where move_orig_id = %s" % (self.move_lines[0].id))
         pick_move_ids = [x[0] for x in cr.fetchall()]
-        qc_picking = self.env['stock.move'].browse(pick_move_ids)[0].picking_id
+        qc_pickings = self.env['stock.move'].browse(pick_move_ids)
+        qc_picking = False
+        if qc_pickings:
+            qc_picking = qc_pickings[0].picking_id
         if self.picking_type_id.warehouse_id.delivery_steps == 'pick_pack_ship' and qc_picking and qc_picking.origin == self.origin and qc_picking.picking_type_id == self.picking_type_id.warehouse_id.pack_type_id:
             return qc_picking.name
         return self.name
@@ -373,7 +376,7 @@ class StockPickingBatch(models.Model):
 #        if not picking_ids:
 #            raise ValidationError("Please validate the picking to print lablel")
         delivery_type = False
-        for picking in self.picking_ids:
+        for picking in self.picking_ids.sorted(key=lambda l: l.product_sku):
             delivery_type = picking.carrier_id.delivery_type
             attachments.append(picking.generate_shipping_label())
         for attachment in attachments:

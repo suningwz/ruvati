@@ -92,8 +92,8 @@
                                             <tr t-if="pick['location_qty']" style="font-size:13px;">
                                                 <t t-foreach="pick['location_qty']" t-as="loc_qty">
                                                     <td style="float:left;">
-                                                        <span t-esc="loc_qty[0]"/>
-                                                        <span t-esc="loc_qty[1]" class="dot badge badge-pill"/>
+                                                        <span style="font-size: 20px;" t-esc="loc_qty[0]"/>
+                                                        <span style="font-size: 20px;" t-esc="loc_qty[1]" class="dot badge badge-pill"/>
                                                     </td>
                                                 </t>
                                             </tr>
