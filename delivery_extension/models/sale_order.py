@@ -13,7 +13,7 @@ class SaleOrder(models.Model):
     products = fields.Char(string="Products", compute='_get_products_internal_code')
     is_back_order = fields.Boolean(string="Back Order")
     duplicate_order = fields.Boolean("Duplicate Order", copy=False)
-    shipment_status = fields.Selection([('assigned', 'Ready Shipment'), ('confirmed', 'Waiting Availability'), ('done', 'Shipped')], string="Shipment Status", copy=False)
+    shipment_status = fields.Selection([('back_order', 'Back Order'), ('assigned', 'Ready Shipment'), ('confirmed', 'Waiting Availability'), ('done', 'Shipped')], string="Shipment Status", copy=False)
 
     def _get_products_internal_code(self):
         for rec in self:
@@ -49,19 +49,12 @@ class SaleOrder(models.Model):
 
     @api.model
     def create(self, vals):
-        internal_ref = []
         if vals.get('client_order_ref', False):
             existing_order_ids = self.search([('client_order_ref', '=', vals.get('client_order_ref', False))])
             if len(existing_order_ids) >= 1:
                 vals.update({'duplicate_order': True})
-
-        # if vals.get('order_line', []):
-        #     for line in vals.get('order_line', []):
-        #         if line[2].get('product_id', False):
-        #             product = self.env['product.product'].browse(line[2].get('product_id'))
-        #             if product and product.default_code and product.type != 'service':
-        #                 internal_ref.append(product.default_code)
-        #     vals.update({'products': ','.join(internal_ref)})
+        if vals.get('is_back_order', False):
+            vals.update({'shipment_status': 'back_order'})
         sec_warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
         if vals.get('amazon_channel', False) and vals.get('amazon_channel') == 'fba':
             return super(SaleOrder, self).create(vals)
@@ -69,13 +62,14 @@ class SaleOrder(models.Model):
         return super(SaleOrder, self).create(vals)
         
     def write(self, vals):
-        internal_ref = []
         if vals.get('client_order_ref', False):
             existing_order_ids = self.search([('client_order_ref', '=', vals.get('client_order_ref', False))])
             if len(existing_order_ids) >= 1:
                 vals.update({'duplicate_order': True})
             else:
                 vals.update({'duplicate_order': False})
+        if vals.get('is_back_order', False):
+            vals.update({'shipment_status': 'back_order'})
         # if vals.get('order_line', []):
         #     for line in vals.get('order_line', []):
         #         if line[2]:

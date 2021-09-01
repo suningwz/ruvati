@@ -68,7 +68,7 @@ class StockPicking(models.Model):
     def action_done(self):
         res = super(StockPicking, self).action_done()
         for rec in self:
-            if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
+            if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id and not rec.is_back_order:
                 rec.sale_id.shipment_status = rec.state
 
         return res
@@ -81,7 +81,7 @@ class StockPicking(models.Model):
             else:
                 res = super(StockPicking, rec).action_assign()
         for rec in self:
-            if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
+            if rec.picking_type_id and rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id and not rec.is_back_order:
                 rec.sale_id.shipment_status = rec.state
         return res
 
