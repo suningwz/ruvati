@@ -42,7 +42,8 @@ LinesWidget.include({
            if (all_qty_done == true && this.pack_done == false){
                this.pack_done = true;
 //                setTimeout(function () {
-               this.$('.o_validate_page').trigger('click');
+        this.trigger_up('validate');
+//               this.$('.o_validate_page').trigger('click');
 //                }, 2000);
 
            }
