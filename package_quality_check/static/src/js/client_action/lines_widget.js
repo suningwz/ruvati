@@ -22,10 +22,33 @@ LinesWidget.include({
 
     init: function (parent, page, pageIndex, nbPages) {
         this._super.apply(this, arguments);
+        this.pack_done = false;
+        this.current_pick_lines = parent.currentState.move_line_ids;
         var qc_pattern = /^[K]\d{7}$/
         if (parent.currentState.name.match(qc_pattern)) {
             this.qc_pick = true;
         }
+    },
+
+    _highlightValidateButtonIfNeeded: function () {
+           var is_highlight =  this._super();
+            var lines = this.current_pick_lines;
+            var all_qty_done = true;
+             _.each(lines, function (line) {
+                if (line.qty_done != line.product_uom_qty){
+                    all_qty_done = false;
+                }
+            });
+           if (all_qty_done == true && this.pack_done == false){
+               this.pack_done = true;
+//                setTimeout(function () {
+               this.$('.o_validate_page').trigger('click');
+//                }, 2000);
+
+           }
+
+           return is_highlight;
+
     },
 
     /**
