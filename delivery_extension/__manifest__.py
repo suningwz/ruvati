@@ -20,7 +20,9 @@
             'reports/picking_operations.xml',
             'reports/report_location_barcode.xml',
             'wizards/check_availability.xml',
-            'wizards/order_confirm_multi.xml'
+            'wizards/order_confirm_multi.xml',
+            'wizards/assign_backorder.xml'
+
 
     ],
     'demo_xml': [],
