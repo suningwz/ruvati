@@ -12,7 +12,8 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     picking_type_id_code = fields.Char('Picking Type Code', related='picking_type_id.sequence_code', readonly=True)
-    is_back_order = fields.Boolean(string="Back Order", compute="_compute_back_order",inverse="_inverse_back_order", store=True, copy=False, readonly=False)
+    is_back_order = fields.Boolean(string="Back Order", compute="_compute_back_order", inverse="_inverse_back_order", store=True, copy=False, readonly=False)
+    is_printed_in_batch = fields.Boolean("Is Printed In Batch", default=False, copy=False)
 
     @api.depends('sale_id.is_back_order')
     def _compute_back_order(self):
@@ -375,10 +376,14 @@ class StockPickingBatch(models.Model):
 #        picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done')
 #        if not picking_ids:
 #            raise ValidationError("Please validate the picking to print lablel")
+        picking_ids = self.picking_ids.filtered(lambda l: not l.is_printed_in_batch and not l.is_create_label)
+        if not picking_ids:
+            raise UserError("No labels to print")
         delivery_type = False
-        for picking in self.picking_ids.sorted(key=lambda l: l.product_sku):
+        for picking in picking_ids.sorted(key=lambda l: l.product_sku):
             delivery_type = picking.carrier_id.delivery_type
             attachments.append(picking.generate_shipping_label())
+            picking.is_printed_in_batch = True
         for attachment in attachments:
             url = attachment['url'].split('?')
             pick_attachment_id = url[0].split('/')[-1]
