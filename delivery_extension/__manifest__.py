@@ -15,10 +15,14 @@
             "views/stock_view.xml",
             "views/res_partner_view.xml",
             "views/sale_order_view.xml",
+            "views/stock_picking_type.xml",
+            "views/res_group.xml",
             'reports/picking_operations.xml',
             'reports/report_location_barcode.xml',
             'wizards/check_availability.xml',
-            'wizards/order_confirm_multi.xml'
+            'wizards/order_confirm_multi.xml',
+            'wizards/assign_backorder.xml'
+
 
     ],
     'demo_xml': [],

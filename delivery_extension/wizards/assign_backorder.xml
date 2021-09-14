@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_assign_backorder" model="ir.ui.view">
+        <field name="name">Assign Back Order</field>
+        <field name="model">assign.back.order</field>
+        <field name="arch" type="xml">
+            <form string="Assign Back Order">
+                <p>
+                It will Assign the selected pickings as back order.
+                </p>
+                <footer>
+                    <button name="action_assign_backorder" string="Back Order" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_assign_backorder" model="ir.actions.act_window">
+        <field name="name">Assign Back Order</field>
+        <field name="res_model">assign.back.order</field>
+        <field name="binding_model_id" ref="model_stock_picking"/>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_assign_sale_backorder" model="ir.actions.act_window">
+        <field name="name">Assign Back Order</field>
+        <field name="res_model">assign.back.order</field>
+        <field name="binding_model_id" ref="model_sale_order"/>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+
+
+</odoo>

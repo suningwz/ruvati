@@ -12,7 +12,8 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     picking_type_id_code = fields.Char('Picking Type Code', related='picking_type_id.sequence_code', readonly=True)
-    is_back_order = fields.Boolean(string="Back Order", compute="_compute_back_order",inverse="_inverse_back_order", store=True, copy=False, readonly=False)
+    is_back_order = fields.Boolean(string="Back Order", compute="_compute_back_order", inverse="_inverse_back_order", store=True, copy=False, readonly=False)
+    is_printed_in_batch = fields.Boolean("Is Printed In Batch", default=False, copy=False)
 
     @api.depends('sale_id.is_back_order')
     def _compute_back_order(self):
@@ -172,11 +173,11 @@ class StockPicking(models.Model):
 
             #Header
             l = zpl.Label(100, 60)
-            l.origin(0, 6)
+            l.origin(0, 3)
             l.write_text("Packing Slip", char_height=2, char_width=2, line_width=60, justification='C')
             l.endorigin()
 
-            l.origin(4, 4)
+            l.origin(4, 7)
             l.write_text("Ship TO: %s" % self.partner_id.street, char_height=2, char_width=2, line_width=60, justification='L')
 
             l.endorigin()
@@ -254,7 +255,7 @@ class StockPicking(models.Model):
                         l.endorigin()
 
             l.origin(4, 30)
-            l.write_text("Dealer# %s" % (self.sale_id.partner_id.email or self.sale_id.partner_id.name), char_height=2,
+            l.write_text("Dealer# %s" % (self.sale_id.partner_id.name or self.sale_id.partner_id.email), char_height=2,
                          char_width=2, line_width=60, justification='L')
 
             l.endorigin()
@@ -276,6 +277,13 @@ class StockPicking(models.Model):
             l.endorigin()
             l.origin(28, 52)
             l.write_text("PROCESSING", char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(20, 56)
+            l.write_barcode(height=70, barcode_type='C', check_digit='Y')
+            l.write_text(self.sale_id.name)
+            l.endorigin()
 
             l.endorigin()
             packing_slips.append(l.dumpZPL())
@@ -375,10 +383,14 @@ class StockPickingBatch(models.Model):
 #        picking_ids = self.picking_ids.filtered(lambda r: r.state == 'done')
 #        if not picking_ids:
 #            raise ValidationError("Please validate the picking to print lablel")
+        picking_ids = self.picking_ids.filtered(lambda l: not l.is_printed_in_batch and not l.is_create_label)
+        if not picking_ids:
+            raise UserError("No labels to print")
         delivery_type = False
-        for picking in self.picking_ids.sorted(key=lambda l: l.product_sku):
+        for picking in picking_ids.sorted(key=lambda l: l.product_sku):
             delivery_type = picking.carrier_id.delivery_type
             attachments.append(picking.generate_shipping_label())
+            picking.is_printed_in_batch = True
         for attachment in attachments:
             url = attachment['url'].split('?')
             pick_attachment_id = url[0].split('/')[-1]
