@@ -173,11 +173,11 @@ class StockPicking(models.Model):
 
             #Header
             l = zpl.Label(100, 60)
-            l.origin(0, 6)
+            l.origin(0, 3)
             l.write_text("Packing Slip", char_height=2, char_width=2, line_width=60, justification='C')
             l.endorigin()
 
-            l.origin(4, 4)
+            l.origin(4, 7)
             l.write_text("Ship TO: %s" % self.partner_id.street, char_height=2, char_width=2, line_width=60, justification='L')
 
             l.endorigin()
@@ -255,7 +255,7 @@ class StockPicking(models.Model):
                         l.endorigin()
 
             l.origin(4, 30)
-            l.write_text("Dealer# %s" % (self.sale_id.partner_id.email or self.sale_id.partner_id.name), char_height=2,
+            l.write_text("Dealer# %s" % (self.sale_id.partner_id.name or self.sale_id.partner_id.email), char_height=2,
                          char_width=2, line_width=60, justification='L')
 
             l.endorigin()
@@ -277,6 +277,13 @@ class StockPicking(models.Model):
             l.endorigin()
             l.origin(28, 52)
             l.write_text("PROCESSING", char_height=2, char_width=2, line_width=60, justification='L')
+
+            l.endorigin()
+
+            l.origin(20, 56)
+            l.write_barcode(height=70, barcode_type='C', check_digit='Y')
+            l.write_text(self.sale_id.name)
+            l.endorigin()
 
             l.endorigin()
             packing_slips.append(l.dumpZPL())

@@ -124,9 +124,9 @@
                                     <tr>
                                         <td>
                                             <strong>Dealer:
-                                                <t t-if="doc.sale_id.partner_id.email"
-                                                   t-esc="doc.sale_id.partner_id.email"></t>
-                                                <t t-else="" t-esc="doc.sale_id.partner_id.name"></t>
+                                                <t t-if="doc.sale_id.partner_id.name"
+                                                   t-esc="doc.sale_id.partner_id.name"></t>
+                                                <t t-else="" t-esc="doc.sale_id.partner_id.email"></t>
                                             </strong>
                                         </td>
                                     </tr>
@@ -149,6 +149,19 @@
                                     </h6>
                                 </div>
                             </div>
+
+                            <div class="text-center" style="width:100%;">
+
+<!--                                    <span class="text-center"><strong>Return</strong></span>-->
+                                    <br/>
+                                    <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', doc.sale_id.name, 400, 100)"
+                                         style="width:400px;height:100px" alt="Barcode"/>
+                                    <!--                                    <p t-field="package.name" style="font-size:20px;"></p>-->
+                               <br/>
+                                <span class="text-center"><strong>Return</strong></span>
+
+                            </div>
+
 
                         </div>
                         <p style="page-break-before:always;"></p>
