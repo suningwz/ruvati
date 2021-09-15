@@ -23,3 +23,12 @@ class ResPartner(models.Model):
         return super(ResPartner, self)._get_contact_name(partner, name)
 
 ResPartner()
+
+
+class ResUser(models.Model):
+    _inherit = "res.users"
+
+    @api.model
+    def create(self, vals):
+        vals.update({'groups_id': [(4, self.env.ref('delivery_extension.group_internal_common_user').id, False)]})
+        return super(ResUser, self).create(vals)
