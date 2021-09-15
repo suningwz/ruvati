@@ -22,6 +22,36 @@
             <field name="groups_id" eval="[(6,0, [ref('group_internal_common_user')])]"/>
         </record>
 
+        <record id="hr.menu_hr_root" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6,0, [ref('group_internal_common_user')])]"/>
+        </record>
+
+        <record id="calendar.mail_menu_calendar" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6,0, [ref('group_internal_common_user')])]"/>
+        </record>
+
+        <record id="contacts.menu_contacts" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6,0, [ref('group_internal_common_user')])]"/>
+        </record>
+
+        <record id="hr_holidays.menu_hr_holidays_root" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6,0, [ref('group_internal_common_user')])]"/>
+        </record>
+
+        <record id="hr_expense.menu_hr_expense_root" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6,0, [ref('group_internal_common_user')])]"/>
+        </record>
+
+
+
+
+
+
+
+
+
+
+
 <!--        <record id="base.default_user" model="res.users">-->
 <!--            <field name="groups_id" eval="[(4,ref('delivery_extension.group_internal_common_user'))]"/>-->
 <!--        </record>-->
