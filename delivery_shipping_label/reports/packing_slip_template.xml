@@ -154,6 +154,9 @@
 
 <!--                                    <span class="text-center"><strong>Return</strong></span>-->
                                     <br/>
+                                        <br/>
+                                         <br/>
+                                <br/>
                                     <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', doc.sale_id.name, 400, 100)"
                                          style="width:400px;height:100px" alt="Barcode"/>
                                     <!--                                    <p t-field="package.name" style="font-size:20px;"></p>-->

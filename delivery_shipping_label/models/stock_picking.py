@@ -280,7 +280,7 @@ class StockPicking(models.Model):
 
             l.endorigin()
 
-            l.origin(20, 56)
+            l.origin(20, 62)
             l.write_barcode(height=70, barcode_type='C', check_digit='Y')
             l.write_text(self.sale_id.name)
             l.endorigin()
