@@ -136,7 +136,7 @@ class StockPicking(models.Model):
                     pick.is_create_label = False
 
     def send_to_shipper(self):
-        if self.create_label_on_validate:
+        if self.create_label_on_validate and self.is_create_label:
 #            self.is_create_label = False
             return super(StockPicking, self).send_to_shipper()
 #    
