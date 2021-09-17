@@ -18,4 +18,16 @@ class AssignBackOrder(models.TransientModel):
 
         return {'success': True}
 
+    def action_revert_backorder(self):
+        if self._context.get('active_model', '') == 'stock.picking':
+            picking_ids = self.env['stock.picking'].browse(self._context.get('active_ids'))
+            picking_ids.write({'is_back_order': False})
+            picking_ids.action_assign()
+        elif self._context.get('active_model', '') == 'sale.order':
+            sale_ids = self.env['sale.order'].browse(self._context.get('active_ids'))
+            sale_ids.write({'is_back_order': False})
+            sale_ids.mapped('picking_ids').action_assign()
+
+        return {'success': True}
+
 
