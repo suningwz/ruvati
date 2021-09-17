@@ -11,7 +11,7 @@ class SaleOrder(models.Model):
 #    carrier_id = fields.Many2one("delivery.carrier", string="Carrier", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     shipper_number = fields.Char(string="Shipper No.")
     products = fields.Char(string="Products", compute='_get_products_internal_code')
-    is_back_order = fields.Boolean(string="Back Order")
+    is_back_order = fields.Boolean(string="Back Order", copy=False)
     duplicate_order = fields.Boolean("Duplicate Order", copy=False)
     shipment_status = fields.Selection([('back_order', 'Back Order'), ('assigned', 'Ready Shipment'), ('confirmed', 'Waiting Availability'), ('done', 'Shipped')], string="Shipment Status", copy=False)
 
