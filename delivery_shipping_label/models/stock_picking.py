@@ -35,10 +35,8 @@ class StockPicking(models.Model):
     def action_assign(self):
         res = super(StockPicking, self).action_assign()
         for rec in self:
-            if rec.picking_type_id == rec.picking_type_id.warehouse_id.pick_type_id:
-                pack_id = self.env.ref('stock.location_pack_zone')
-                if pack_id and rec.location_dest_id.id == pack_id.id:
-                    rec.with_context({'assign': True}).put_in_pack()
+            if rec.picking_type_id == rec.sale_id.warehouse_id.pick_type_id:
+                rec.with_context({'assign': True}).put_in_pack()
         return res
 
     def put_in_pack(self):
@@ -440,6 +438,9 @@ class StockPickingBatch(models.Model):
     def action_create_label(self):
         """ Creates shipping label for batch of picking
         """
+        picking_waiting = self.picking_ids.filtered(lambda p: p.state in ['confirmed', 'cancel'])
+        if picking_waiting:
+            raise UserError("The following pickings are in waiting state %s. Please remove that from the batch before creating labels"% picking_waiting.mapped('name'))
         picking_ids = self.picking_ids.filtered(lambda r: r.is_create_label)
         if not picking_ids:
             raise ValidationError("Label is created for all pickings.")

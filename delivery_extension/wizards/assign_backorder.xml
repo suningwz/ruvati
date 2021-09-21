@@ -10,6 +10,7 @@
                 </p>
                 <footer>
                     <button name="action_assign_backorder" string="Back Order" type="object" class="btn-primary"/>
+                    <button name="action_revert_backorder" string="Revert To Order" type="object"/>
                     <button string="Cancel" class="btn-secondary" special="cancel" />
                 </footer>
             </form>
