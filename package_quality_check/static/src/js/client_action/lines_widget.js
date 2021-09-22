@@ -23,11 +23,20 @@ LinesWidget.include({
     init: function (parent, page, pageIndex, nbPages) {
         this._super.apply(this, arguments);
         this.pack_done = false;
+        var self = this;
         this.current_pick_lines = parent.currentState.move_line_ids;
         var qc_pattern = /^[K]\d{7}$/
         if (parent.currentState.name.match(qc_pattern)) {
             this.qc_pick = true;
         }
+
+         _.each(this.current_pick_lines, function (line) {
+                if (line.qty_done != line.product_uom_qty){
+                    self.pack_done = true;
+
+                }
+
+            });
     },
 
     _highlightValidateButtonIfNeeded: function () {
@@ -35,12 +44,10 @@ LinesWidget.include({
            var self = this;
             var lines = this.current_pick_lines;
             var all_qty_done = true;
-             self.pack_done = false;
 
              _.each(lines, function (line) {
                 if (line.qty_done != line.product_uom_qty){
                     all_qty_done = false;
-                    self.pack_done = true;
 
                 }
 
