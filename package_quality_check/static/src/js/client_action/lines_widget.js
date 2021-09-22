@@ -32,25 +32,31 @@ LinesWidget.include({
 
     _highlightValidateButtonIfNeeded: function () {
            var is_highlight =  this._super();
+           var self = this;
             var lines = this.current_pick_lines;
             var all_qty_done = true;
+             self.pack_done = false;
+
              _.each(lines, function (line) {
                 if (line.qty_done != line.product_uom_qty){
                     all_qty_done = false;
+                    self.pack_done = true;
+
                 }
+
             });
+
            if (all_qty_done == true && this.pack_done == false){
-               this.pack_done = true;
-//                setTimeout(function () {
         this.trigger_up('validate');
-//               this.$('.o_validate_page').trigger('click');
-//                }, 2000);
 
            }
+
 
            return is_highlight;
 
     },
+
+
 
     /**
      * Highlight and scroll to a specific line in the current page after removing the highlight on

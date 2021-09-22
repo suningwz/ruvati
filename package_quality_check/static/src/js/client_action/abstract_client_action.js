@@ -152,7 +152,6 @@ events:  {
      },
 
      _findCandidateLineToIncrement: function (params) {
-        console.log("sssssssssssssssssssssssssss")
          var picking_type_code = this.currentState.picking_type_code;
         if (this.actionParams.model === 'stock.picking' && picking_type_code ==='internal'){
             var process_result = this._process_pick_operation(params);

@@ -438,6 +438,9 @@ class StockPickingBatch(models.Model):
     def action_create_label(self):
         """ Creates shipping label for batch of picking
         """
+        picking_waiting = self.picking_ids.filtered(lambda p: p.state in ['confirmed', 'cancel'])
+        if picking_waiting:
+            raise UserError("The following pickings are in waiting state %s. Please remove that from the batch before creating labels"% picking_waiting.mapped('name'))
         picking_ids = self.picking_ids.filtered(lambda r: r.is_create_label)
         if not picking_ids:
             raise ValidationError("Label is created for all pickings.")
