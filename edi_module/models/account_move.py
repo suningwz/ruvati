@@ -60,62 +60,62 @@ class AccountMove(models.Model):
             })
         return lines
 
-    def post(self):
-        res = super(AccountMove, self).post()
-        for move in self:
-            sale_order = self.env['sale.order'].search([('name', '=', move.invoice_origin)])
-            if not sale_order.edi_order:
-                break
-            if move.is_invoice():
-                lines = move._get_lines()
-                tracking_numbers, carrier_id, shipping_id = move._get_tracking_numbers()
-                # path = ''
-                shipment_data = {
-                    "BSISerObjects.bsiinvoice": {
-
-                        'invoice_no': move.name,
-                        'customer_number': move.partner_id.customer_id,
-                        'invoice_date': move.invoice_date.strftime('%Y-%m-%d'),
-                        "invoice_due_date": move.invoice_date_due.strftime('%Y-%m-%d'),
-                        "terms_description": move.invoice_payment_term_id.name,
-                        "total_invoice_amount": move.amount_total,
-                        "ship_via_description": carrier_id.name,
-                        'billing_address': {
-                            "name": move.partner_id.name,
-                            "address_1": move.partner_id.street,
-                            "address_2": move.partner_id.street2,
-                            "city": move.partner_id.city,
-                            "state": move.partner_id.state_id.code,
-                            "zip": move.partner_id.zip,
-                            "country": move.partner_id.country_id.code,
-
-                        },
-                        "ship_to_address": {
-                            "name": shipping_id.name,
-                            "address_1": shipping_id.street,
-                            "address_2": shipping_id.street2,
-                            "city": shipping_id.city,
-                            "state": shipping_id.state_id.code,
-                            "zip": shipping_id.zip,
-                            "country": shipping_id.country_id.code,
-
-                        },
-                        "remit_to_address": {
-                            "name": move.company_id.name,
-                            "address_1": move.company_id.street,
-                            "address_2": move.company_id.street2,
-                            "city": move.company_id.city,
-                            "state": move.company_id.state_id.code,
-                            "zip": move.company_id.zip,
-                            "country": move.company_id.country_id.code,
-
-                        },
-                        'tracking_numbers': tracking_numbers,
-                        "lines": lines
-
-                    }
-                }
-                move.send_data(shipment_data)
-                # json.dump(shipment_data, so_file, indent=2)
-
-        return res
+    # def post(self):
+    #     res = super(AccountMove, self).post()
+    #     for move in self:
+    #         sale_order = self.env['sale.order'].search([('name', '=', move.invoice_origin)])
+    #         if not sale_order.edi_order:
+    #             break
+    #         if move.is_invoice():
+    #             lines = move._get_lines()
+    #             tracking_numbers, carrier_id, shipping_id = move._get_tracking_numbers()
+    #             # path = ''
+    #             shipment_data = {
+    #                 "BSISerObjects.bsiinvoice": {
+    #
+    #                     'invoice_no': move.name,
+    #                     'customer_number': move.partner_id.customer_id,
+    #                     'invoice_date': move.invoice_date.strftime('%Y-%m-%d'),
+    #                     "invoice_due_date": move.invoice_date_due.strftime('%Y-%m-%d'),
+    #                     "terms_description": move.invoice_payment_term_id.name,
+    #                     "total_invoice_amount": move.amount_total,
+    #                     "ship_via_description": carrier_id.name,
+    #                     'billing_address': {
+    #                         "name": move.partner_id.name,
+    #                         "address_1": move.partner_id.street,
+    #                         "address_2": move.partner_id.street2,
+    #                         "city": move.partner_id.city,
+    #                         "state": move.partner_id.state_id.code,
+    #                         "zip": move.partner_id.zip,
+    #                         "country": move.partner_id.country_id.code,
+    #
+    #                     },
+    #                     "ship_to_address": {
+    #                         "name": shipping_id.name,
+    #                         "address_1": shipping_id.street,
+    #                         "address_2": shipping_id.street2,
+    #                         "city": shipping_id.city,
+    #                         "state": shipping_id.state_id.code,
+    #                         "zip": shipping_id.zip,
+    #                         "country": shipping_id.country_id.code,
+    #
+    #                     },
+    #                     "remit_to_address": {
+    #                         "name": move.company_id.name,
+    #                         "address_1": move.company_id.street,
+    #                         "address_2": move.company_id.street2,
+    #                         "city": move.company_id.city,
+    #                         "state": move.company_id.state_id.code,
+    #                         "zip": move.company_id.zip,
+    #                         "country": move.company_id.country_id.code,
+    #
+    #                     },
+    #                     'tracking_numbers': tracking_numbers,
+    #                     "lines": lines
+    #
+    #                 }
+    #             }
+    #             move.send_data(shipment_data)
+    #             # json.dump(shipment_data, so_file, indent=2)
+    #
+    #     return res
