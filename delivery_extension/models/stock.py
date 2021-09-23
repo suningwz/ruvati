@@ -5,6 +5,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import requests
 import json
+from itertools import groupby
 
 
 class StockPicking(models.Model):
@@ -161,6 +162,44 @@ class StockMove(models.Model):
         elif order and res.get('location_dest_id', 0) == order.warehouse_id.wh_pack_stock_loc_id.id:
             res['carrier_id'] = order.carrier_id and order.carrier_id.id or res['carrier_id']
         return res
+
+    def _assign_picking(self):
+        """ Try to assign the moves to an existing picking that has not been
+        reserved yet and has the same procurement group, locations and picking
+        type (moves should already have them identical). Otherwise, create a new
+        picking to assign them to. """
+        Picking = self.env['stock.picking']
+        grouped_moves = groupby(sorted(self, key=lambda m: [f.id for f in m._key_assign_picking()]), key=lambda m: [m._key_assign_picking()])
+        for group, moves in grouped_moves:
+            moves = self.env['stock.move'].concat(*list(moves))
+            new_picking = False
+            # Could pass the arguments contained in group but they are the same
+            # for each move that why moves[0] is acceptable
+            picking = moves[0]._search_picking_for_assignation()
+            if picking:
+                if any(picking.partner_id.id != m.partner_id.id or
+                        picking.origin != m.origin for m in moves):
+                    # If a picking is found, we'll append `move` to its move list and thus its
+                    # `partner_id` and `ref` field will refer to multiple records. In this
+                    # case, we chose to  wipe them.
+                    picking.write({
+                        'partner_id': False,
+                        'origin': False,
+                    })
+            else:
+                new_picking = True
+                picking = Picking.create(moves._get_new_picking_values())
+            sale_id = moves.group_id.sale_id
+            picking_type_id = sale_id.warehouse_id.pick_type_id
+            if picking.picking_type_id.id == picking_type_id.id and len(moves) > 1:
+                moves[0].picking_id = picking.id
+                for m in moves.filtered(lambda l: not l.picking_id):
+                    new_pick = Picking.create(m._get_new_picking_values())
+                    m.write({'picking_id': new_pick.id})
+            else:
+                moves.write({'picking_id': picking.id})
+            moves._assign_picking_post_process(new=new_picking)
+        return True
         
 #    def _get_new_picking_values(self):
 #        vals = super(StockMove, self)._get_new_picking_values()
@@ -169,6 +208,19 @@ class StockMove(models.Model):
 #            if order and vals.get('location_dest_id', 0) == order.warehouse_id.wh_pack_stock_loc_id.id:
 #                vals['carrier_id'] = order.carrier_id and order.carrier_id.id or vals['carrier_id'] 
 #        return vals
+
+    def _action_assign(self):
+        res = False
+        for rec in self:
+            if rec.picking_type_id.id == rec.warehouse_id.pack_type_id.id:
+                pick_ids = rec.picking_id.sale_id.picking_ids.filtered(lambda l:l.picking_type_id.id == rec.warehouse_id.pick_type_id.id)
+                if all(p.state == 'done' for p in pick_ids):
+                    res = super(StockMove, rec.picking_id.move_lines)._action_assign()
+                else:
+                    continue
+            else:
+                res = super(StockMove, self)._action_assign()
+        return res
     
 StockMove
 
