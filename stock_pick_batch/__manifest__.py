@@ -11,7 +11,7 @@ Batch transfer in inventory
     """,
     'website': 'http://www.confianzit.com',
 
-    "depends": ['base','stock_picking_batch','stock','delivery'],
+    "depends": ['base', 'delivery_extension', 'stock_picking_batch','stock','delivery'],
 
     'data': [
             'views/stock_view.xml',

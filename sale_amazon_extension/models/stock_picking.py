@@ -11,8 +11,8 @@ class StockPicking(models.Model):
     def _get_carrier_details(self):
         """ Return the shipper name and tracking number if any. """
         self.ensure_one()
-        _logger.info(".................amazon_carrier_ref %s id: %s"%(self.carrier_id.name,self.id))
-        return self.carrier_id and self.carrier_id.name, self.carrier_tracking_ref
+        pick_id = self.sale_id.picking_ids.filtered(lambda l: l.carrier_tracking_ref)
+        return pick_id and pick_id[0].carrier_id.name, pick_id[0].carrier_tracking_ref
     
     @api.model
     def _sync_pickings(self, account_ids=()):

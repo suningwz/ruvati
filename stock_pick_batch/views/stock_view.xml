@@ -30,6 +30,12 @@
                 <xpath expr="//field[@name='picking_ids']/tree/field[@name='location_id']" position="after">
                     <field name="carrier_id"/>
                 </xpath>
+                <xpath expr="//field[@name='picking_ids']/tree/field[@name='name']" position="after">
+                    <field name="dealer"/>
+                    <field name="customer_po_number"/>
+                </xpath>
+
+
             </field>
         </record>
 
