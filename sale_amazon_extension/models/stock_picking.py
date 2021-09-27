@@ -1,10 +1,18 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo import api, fields, models, _
 from odoo.osv import expression
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
+
+    def _get_carrier_details(self):
+        """ Return the shipper name and tracking number if any. """
+        self.ensure_one()
+        pick_id = self.sale_id.picking_ids.filtered(lambda l: l.carrier_tracking_ref)
+        return pick_id and pick_id[0].carrier_id.name, pick_id[0].carrier_tracking_ref
     
     @api.model
     def _sync_pickings(self, account_ids=()):
