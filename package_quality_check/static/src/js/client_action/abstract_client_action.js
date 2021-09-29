@@ -30,7 +30,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 //        },
 //      _onClickSub : function(){
 //      this._onBarcodeScanned($('#b_code').val());},
-
+//
 
     init: function (parent, action) {
         this._super.apply(this, arguments);
@@ -352,6 +352,8 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
                 errorMessage = _t("You may scanned all lines");
                 return Promise.reject(errorMessage);
             }
+
+
 //            else {
 //                self._save();
 //            }
@@ -459,6 +461,46 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         var sourceLocation = this.locationsByBarcode[barcode];
         if (sourceLocation  && ! (this.mode === 'receipt' || this.mode === 'no_multi_locations')) {
             const locationId = this._getLocationId();
+
+             if (this.actionParams.model === 'stock.picking') {
+                  var available_qty =  self._rpc({
+                'model': 'stock.picking',
+                'method': 'is_product_available',
+                'args': [self.actionParams.pickingId,
+                sourceLocation.id,
+                           ],
+            })
+        return available_qty.then(function(qty){
+
+        if (qty == 0) {
+
+                errorMessage = _t("Item is not available in the location");
+                return Promise.reject(errorMessage);
+            }
+            else{
+
+            if (locationId && !isChildOf(locationId, sourceLocation)) {
+                errorMessage = _t('This location is not a child of the main location.');
+                return Promise.reject(errorMessage);
+            } else {
+                // There's nothing to do on the state here, just mark `this.scanned_location`.
+                linesActions.push([self.linesWidget.highlightLocation, [true]]);
+                if (self.actionParams.model === 'stock.picking') {
+                    linesActions.push([self.linesWidget.highlightDestinationLocation, [false]]);
+                }
+                self.scanned_location = sourceLocation;
+                self.is_location_scanned = true;
+                self.currentStep = 'product';
+                return Promise.resolve({linesActions: linesActions});
+            }
+
+            }
+
+        });
+
+            }
+
+
             if (locationId && !isChildOf(locationId, sourceLocation)) {
                 errorMessage = _t('This location is not a child of the main location.');
                 return Promise.reject(errorMessage);
@@ -489,7 +531,6 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         if (this.actionParams.model === 'stock.picking') {
             linesActions.push([this.linesWidget.highlightDestinationLocation, [false]]);
         }
-
         return this._step_product(barcode, linesActions).then(function (res) {
             return Promise.resolve({linesActions: res.linesActions});
         }, function (specializedErrorMessage) {

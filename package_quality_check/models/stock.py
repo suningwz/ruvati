@@ -80,6 +80,14 @@ class StockPicking(models.Model):
                 res.append(product.id)
         return res
 
+    def is_product_available(self, location):
+        product_id = self.move_lines.mapped('product_id')[0]
+        location_id= self.env['stock.location'].browse(location)
+        available_qty = self.env['stock.quant']._get_available_quantity(product_id, location_id,
+                                                                        strict=True)
+        return available_qty
+
+
 StockPicking()
 
 

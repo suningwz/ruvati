@@ -30,5 +30,7 @@ class ResUser(models.Model):
 
     @api.model
     def create(self, vals):
-        vals.update({'groups_id': [(4, self.env.ref('delivery_extension.group_internal_common_user').id, False)]})
-        return super(ResUser, self).create(vals)
+        res = super(ResUser, self).create(vals)
+        res.groups_id = [(4, self.env.ref('delivery_extension.group_internal_common_user').id)]
+        # vals.update({'groups_id': [(4, self.env.ref('delivery_extension.group_internal_common_user').id, False)]})
+        return res
