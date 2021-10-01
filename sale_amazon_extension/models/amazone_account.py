@@ -90,7 +90,7 @@ class AmazonAccount(models.Model):
                         if not amazon_product_included:
                             self._generate_stock_moves(order)
                     elif order.amazon_channel == 'fbm':
-                        if not amazon_product_included:
+                        if not amazon_product_included and not order.state == 'draft':
                             order.with_context(mail_notrack=True).action_done()
                     _logger.info("synchronized sale.order with amazon_order_ref %s for "
                                  "amazon.account with id %s" % (amazon_order_ref, self.id))
@@ -150,6 +150,10 @@ class AmazonAccount(models.Model):
                 warehouse = self.env['stock.warehouse'].search([('warehouse_type', '=', 'sub_warehouse')], limit=1)
                 if warehouse:
                     warehouse_id = warehouse.id
+            ship_partner_phone = ''.join(e for e in delivery_partner.phone if e.isalnum())
+            if len(ship_partner_phone) < 10 or not ship_partner_phone.isnumeric():
+                state = 'draft'
+
             order = self.env['sale.order'].with_context(mail_create_nosubscribe=True, amazon_product=amazon_product_context).create({
                 'origin': 'Amazon Order %s' % amazon_order_ref,
                 'state': state,

@@ -30,7 +30,7 @@ class BatchPickingReport(models.AbstractModel):
                 'sale_id': move.picking_id.sale_id.name,
                 'pick_qty': int(move.product_uom_qty),
                 'name': move.picking_id.name,
-                'location_qty': [(i.location_id.display_name, int(i.quantity)) for i in stock_quants][:3],
+                'location_qty': [(i.location_id.name, int(i.quantity)) for i in stock_quants][:3],
             })
         for r in [list(data.values()) for data in result.values()]:
             batch_pick_list.extend(r)

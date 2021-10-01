@@ -3,12 +3,21 @@
 import logging
 
 from odoo import fields, models, _
+from odoo.exceptions import UserError
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
     is_amazon_order = fields.Boolean("Is Amazon order")
+
+    def action_confirm(self):
+        for rec in self:
+            phone = ''.join(e for e in rec.partner_shipping_id.phone if e.isalnum())
+            if len(phone) < 10 or not phone.isnumeric():
+                raise UserError("Phone number is incorrect for this customer %s " % rec.partner_shipping_id.name)
+
+        return super(SaleOrder, self).action_confirm()
     
     def set_delivery_line(self, carrier, amount):
         self.carrier_id = carrier.id
