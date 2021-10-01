@@ -77,7 +77,7 @@
         <record id="email_template_payment_notifications_inside_sales" model="mail.template">
             <field name="name">Payment Notification</field>
             <field name="subject">Payment Received - ${object.name}</field>
-            <field name="email_to">shibi.thambi@confianzit.com</field>
+            <field name="email_to">${object.company_id.email or ''}</field>
             <field name="model_id" ref="sale.model_sale_order"/>
             <field name="auto_delete" eval="True"/>
             <field name="lang">${object.company_id.lang}</field>

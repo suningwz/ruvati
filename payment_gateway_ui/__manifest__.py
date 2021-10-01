@@ -39,7 +39,7 @@ Payment Gateway Integration module for making payments through different gateway
             "views/partner_view.xml",
             "views/account_payment_view.xml",
             "security/authorize_security.xml",
-            # "security/ir.model.access.csv",
+            "security/ir.model.access.csv",
             "data/mail_template_invoice.xml",
             "data/mail_template_sale.xml",
              ],

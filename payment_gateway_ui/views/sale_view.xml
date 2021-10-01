@@ -9,9 +9,6 @@
             <field name="arch" type="xml">
                 <notebook position="inside">
                     <page string="Payment Gateway">
-<!--                        <group>-->
-<!--                            <field name="payment_status" attrs="{'invisible':[('payment_status','=', False)]}"/>-->
-<!--                        </group>-->
                         <separator string="payment details"
                                    attrs="{'invisible':[('transaction_date','=', False)]}"/>
                         <group col="4" colspan="2">
