@@ -10,6 +10,8 @@ class ResPartner(models.Model):
     @api.onchange('phone', 'zip')
     def check_zip_phone_validation(self):
         for rec in self:
+            if not rec.phone or not rec.zip:
+                return
             phone = ''.join(e for e in rec.phone if e.isalnum())
             if len(phone) < 10 or not phone.isnumeric():
                 raise UserError("Phone number is incorrect for this customer")
