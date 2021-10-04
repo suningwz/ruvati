@@ -48,6 +48,7 @@ class Container(models.Model):
                                                                     'received partial' :[('readonly', True)],
                                                                     'received warehouse' :  [('readonly', True)]
                                                                     })
+    total_qty = fields.Float("Total Qty", compute='_compute_total_qty_load')
     currency_id = fields.Many2one('res.currency', string='Currency', default=lambda self:self.env.user.company_id.currency_id)
     priority = fields.Boolean(string="High Priority")
     note_ids = fields.One2many('container.status.note', 'container_id', string="Tracking Updates")
@@ -66,6 +67,10 @@ class Container(models.Model):
 #                rec.last_note = '%s : %s' % (note_ids[-1].status_date.strftime('%m/%d/%Y'), note_ids[-1].name)
 #            else:
 #                rec.last_note = ""
+    @api.model
+    def _compute_total_qty_load(self):
+        for rec in self:
+            rec.total_qty = sum(rec.container_lines.mapped('qty_to_load'))
 
     @api.model
     def compute_last_note(self):

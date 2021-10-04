@@ -268,7 +268,8 @@ class AuthorizenetApi(models.Model):
             op_string = inp_string.replace('&', 'and')  # replaces '&' with 'and'
             op_string = re.sub('<.+?>', '', op_string)  # removes any characters in between '<' and '>'
             op_string = re.sub('@.+', '', op_string)  # removes any character that comes after '@'
-            op_string = re.sub('[^-,_A-Za-z0-9]', '', op_string)  # repaced all the special character except ,-_  
+            op_string = re.sub('[^-,_A-Za-z0-9]', ' ', op_string)  # repaced all the special character except ,-_
+
         return op_string
 
     @api.model
