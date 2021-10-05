@@ -15,6 +15,7 @@
                     <field name="port_date"/>
                     <field name="freight_charge" widget="monetary"/>
                     <field name="state"/>
+                    <field name="total_qty" widget="integer"/>
                     <field name="last_note"/>
                     <field name="priority" invisible="1"/>
                     <button name="priority" icon="fa-flag text-danger" attrs="{'invisible': [('priority','=',False)]}"/>
