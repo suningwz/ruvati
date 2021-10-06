@@ -326,7 +326,7 @@ events:  {
         var allowScan = false;
         var product = await this._isProduct(barcode);
         if (product) {
-            if (self.currentState.name.includes('PICK') && !this.is_location_scanned) {
+            if (self.currentState.name.includes('C') && !this.is_location_scanned) {
                 errorMessage = _t("You are expected to scan a source location before scanning a product");
                 return Promise.reject(errorMessage);
             }
