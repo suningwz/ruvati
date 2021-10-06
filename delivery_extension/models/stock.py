@@ -6,6 +6,8 @@ from odoo.exceptions import ValidationError
 import requests
 import json
 from itertools import groupby
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class StockPicking(models.Model):
@@ -113,7 +115,7 @@ class StockPicking(models.Model):
             if self.is_create_label and not self.carrier_id:
                 raise ValidationError('Please configure a Carrier to create a Label for %s' % self.name)
         self.create_label_on_validate = False
-       	res = super(StockPicking, self).button_validate()
+        res = super(StockPicking, self).button_validate()
         self.write({'is_back_order': False})
         return res
         
@@ -121,20 +123,23 @@ class StockPicking(models.Model):
         """ Invokes on click of Create Label button from picking, to create shipping label before validating by assigning the packages.
         """
         for pick in self:
-#            if pick.state != 'done':
-#                raise ValidationError('Sorry!!! Please validate %s before creating Label' % pick.name)
-            if not pick.is_create_label:
-                raise ValidationError('Sorry!!! You cannot create a label for %s' % pick.name)
-            if pick.is_create_label and not pick.carrier_id:
-                raise ValidationError('Please configure a Carrier to create a Label for %s' % pick.name)
-#            pick.action_assign()
-            if not pick.has_packages:
-                pick.put_in_pack()
-            if pick.carrier_id:
-                if pick.carrier_id.integration_level == 'rate_and_ship' and pick.picking_type_code != 'incoming':
-                    pick.create_label_on_validate = True
-                    pick.send_to_shipper()
-                    pick.is_create_label = False
+            try:
+                if not pick.is_create_label:
+                    raise ValidationError('Sorry!!! You cannot create a label for %s' % pick.name)
+                if pick.is_create_label and not pick.carrier_id:
+                    raise ValidationError('Please configure a Carrier to create a Label for %s' % pick.name)
+                if not pick.has_packages:
+                    pick.put_in_pack()
+                if pick.carrier_id:
+                    if pick.carrier_id.integration_level == 'rate_and_ship' and pick.picking_type_code != 'incoming':
+                        pick.create_label_on_validate = True
+                        pick.send_to_shipper()
+                        pick.is_create_label = False
+                        self.env.cr.commit()
+
+            except Exception as e:
+                _logger.info("%s PICKING:%s" % (e, pick.name))
+                raise ValidationError("%s PICKING:%s" % (e, pick.name))
 
     def send_to_shipper(self):
         if self.create_label_on_validate and self.is_create_label:
