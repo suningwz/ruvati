@@ -13,7 +13,7 @@ class SaleOrder(models.Model):
     products = fields.Char(string="Products", compute='_get_products_internal_code')
     is_back_order = fields.Boolean(string="Back Order", copy=False)
     duplicate_order = fields.Boolean("Duplicate Order", copy=False)
-    shipment_status = fields.Selection([('back_order', 'Back Order'), ('assigned', 'Ready Shipment'), ('confirmed', 'Waiting Availability'), ('done', 'Shipped')], string="Shipment Status", copy=False)
+    shipment_status = fields.Selection([('back_order', 'Back Order'),('waiting', 'Waiting'), ('assigned', 'Ready Shipment'), ('confirmed', 'Waiting Availability'), ('done', 'Shipped')], string="Shipment Status", copy=False)
 
     def _get_products_internal_code(self):
         for rec in self:
