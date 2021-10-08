@@ -8,6 +8,7 @@
 <!--        <t t-jquery="span.o_scan_message_scan_products" t-operation="before">-->
 <!--        <input type="text" class="o_input" id="b_code"/>-->
 <!--        <input type="button" id="b_submit" value="submit"/>-->
+
 <!--    </t>-->
     </t>
 

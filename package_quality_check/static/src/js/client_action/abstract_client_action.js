@@ -30,7 +30,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
 //        },
 //      _onClickSub : function(){
 //      this._onBarcodeScanned($('#b_code').val());},
-//
+
 
     init: function (parent, action) {
         this._super.apply(this, arguments);
@@ -326,7 +326,7 @@ var PickingQualityCheckClientAction = QualityCheckClientAction.include({
         var allowScan = false;
         var product = await this._isProduct(barcode);
         if (product) {
-            if (self.currentState.name.includes('PICK') && !this.is_location_scanned) {
+            if (self.currentState.name.includes('C') && !this.is_location_scanned) {
                 errorMessage = _t("You are expected to scan a source location before scanning a product");
                 return Promise.reject(errorMessage);
             }
