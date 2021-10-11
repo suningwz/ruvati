@@ -201,6 +201,10 @@ class StockMove(models.Model):
                 for m in moves.filtered(lambda l: not l.picking_id):
                     new_pick = Picking.create(m._get_new_picking_values())
                     m.write({'picking_id': new_pick.id})
+            elif picking.picking_type_id.id == picking_type_id.id and len(moves) == 1 and len(sale_id.order_line) > 1:
+                for m in moves.filtered(lambda l: not l.picking_id):
+                    new_pick = Picking.create(m._get_new_picking_values())
+                    m.write({'picking_id': new_pick.id})
             else:
                 moves.write({'picking_id': picking.id})
             moves._assign_picking_post_process(new=new_picking)
