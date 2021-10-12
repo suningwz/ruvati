@@ -20,6 +20,12 @@ class PurchaseOrder(models.Model):
         ('cancel', 'Cancelled')
         ], string='Status', readonly=True, index=True, copy=False, default='draft', tracking=True)
     warehouse_type = fields.Selection(related="picking_type_id.warehouse_id.warehouse_type", string="Warehouse Type")
+    total_qty = fields.Float("Total Qty", compute='_compute_total_qty_purchase')
+
+    @api.model
+    def _compute_total_qty_purchase(self):
+        for rec in self:
+            rec.total_qty = sum(rec.order_line.mapped('product_qty'))
 
     @api.depends('state','order_line.is_ocean_line')
     def compute_is_ocean_order(self):
